@@ -421,5 +421,22 @@ public class Timestamp {
         }
         return map;
     }
+    /**
+     * Add Op to current timestamp and return the sub stamp
+     * @param op - The operation to insert
+     * @return Returns the sub timestamp
+     */
+    public Timestamp add(Op op){
+        // nonce_appended_stamp = timestamp.ops.add(com.eternitywall.ots.op.OpAppend(os.urandom(16)))
+        //Op opAppend = new OpAppend(bytes);
+
+        if (this.ops.containsKey(op)) {
+            return this.ops.get(op);
+        }
+
+        Timestamp stamp = new Timestamp(op.call(this.msg));
+        this.ops.put(op, stamp);
+        return stamp;
+    }
 
 }

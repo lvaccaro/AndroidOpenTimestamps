@@ -5,8 +5,19 @@ package com.eternitywall.opentimestamps;
  */
 
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
 public class IOUtil {
+
+
+    public static byte[] SHA256 (byte[] bytes) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(bytes);
+        return md.digest();
+    }
 
     public static byte[] readFile(String file) throws IOException {
         return readFile(new File(file));
@@ -28,5 +39,16 @@ public class IOUtil {
         } finally {
             f.close();
         }
+    }
+
+    public static String getDate(long milliSeconds, String dateFormat)
+    {
+        // Create a DateFormatter object for displaying date in specified format.
+        SimpleDateFormat formatter = new SimpleDateFormat(dateFormat);
+
+        // Create a calendar object that will convert the date and time value in milliseconds to date.
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(milliSeconds);
+        return formatter.format(calendar.getTime());
     }
 }
