@@ -10,7 +10,7 @@ import java.util.logging.Logger;
  * Cryptographic operation tag numbers taken from RFC4880, although it's not
  * guaranteed that they'll continue to match that RFC in the future.
  *
- * @see OpCrypto
+ * @see com.eternitywall.ots.op.OpCrypto
  */
 public class OpRIPEMD160 extends OpCrypto {
 
@@ -40,12 +40,6 @@ public class OpRIPEMD160 extends OpCrypto {
 
     OpRIPEMD160() {
         super();
-        this.arg = new byte[]{};
-    }
-
-    OpRIPEMD160(byte[] arg_) {
-        super(arg_);
-        this.arg = arg_;
     }
 
     @Override
@@ -59,6 +53,11 @@ public class OpRIPEMD160 extends OpCrypto {
 
     public static Op deserializeFromTag(StreamDeserializationContext ctx, byte tag) {
         return OpCrypto.deserializeFromTag(ctx, tag);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return (obj instanceof OpRIPEMD160);
     }
 
 }

@@ -51,7 +51,7 @@ public class OpenTimestamps {
         StreamDeserializationContext ctx = new StreamDeserializationContext(ots);
         DetachedTimestampFile detachedTimestampFile = DetachedTimestampFile.deserialize(ctx);
 
-        String fileHash = Utils.bytesToHex(detachedTimestampFile.timestamp.msg).toLowerCase();
+        String fileHash = DatatypeConverter.printHexBinary(detachedTimestampFile.timestamp.msg).toLowerCase();
         String hashOp = ((OpCrypto) detachedTimestampFile.fileHashOp)._TAG_NAME();
 
         String firstLine = "File " + hashOp + " hash: " + fileHash + '\n';
@@ -67,7 +67,7 @@ public class OpenTimestamps {
         if (timestamp == null) {
             return "No timestamp";
         }
-        String fileHash = Utils.bytesToHex(timestamp.msg).toLowerCase();
+        String fileHash = DatatypeConverter.printHexBinary(timestamp.msg).toLowerCase();
         String firstLine = "Hash: " + fileHash + '\n';
         return firstLine + "Timestamp:\n" + timestamp.strTree(0);
     }
@@ -247,7 +247,6 @@ public class OpenTimestamps {
          * later, so if we didn't use a nonce for every file, the timestamp
          * would leak information on the digests of adjacent files.
          */
-        Timestamp merkleRoot;
         byte[] bytesRandom16 = new byte[16];
         try {
             bytesRandom16 = Utils.randBytes(16);
@@ -257,22 +256,10 @@ public class OpenTimestamps {
         }
 
         // nonce_appended_stamp = file_timestamp.timestamp.ops.add(com.eternitywall.ots.op.OpAppend(os.urandom(16)))
-        Op opAppend = new OpAppend(bytesRandom16);
-        Timestamp nonceAppendedStamp = fileTimestamp.timestamp.ops.get(opAppend);
-        if (nonceAppendedStamp == null) {
-            nonceAppendedStamp = new Timestamp(opAppend.call(fileTimestamp.timestamp.msg));
-            fileTimestamp.timestamp.ops.put(opAppend, nonceAppendedStamp);
-        }
-
+        Timestamp nonceAppendedStamp = fileTimestamp.timestamp.add(new OpAppend(bytesRandom16));
         // merkle_root = nonce_appended_stamp.ops.add(com.eternitywall.ots.op.OpSHA256())
-        Op opSHA256 = new OpSHA256();
-        merkleRoot = nonceAppendedStamp.ops.get(opSHA256);
-        if (merkleRoot == null) {
-            merkleRoot = new Timestamp(opSHA256.call(nonceAppendedStamp.msg));
-            nonceAppendedStamp.ops.put(opSHA256, merkleRoot);
-        }
-
-        // Markle root
+        Timestamp merkleRoot = nonceAppendedStamp.add(new OpSHA256());
+        // Merkle root
         Timestamp merkleTip = merkleRoot;
 
         // Parse parameters
@@ -308,42 +295,6 @@ public class OpenTimestamps {
         StreamSerializationContext css = new StreamSerializationContext();
         fileTimestamp.serialize(css);
         return css.getOutput();
-    }
-
-
-    public static Timestamp makeMerkleTree(List<DetachedTimestampFile> fileTimestamps){
-        List<Timestamp> merkleRoots = new ArrayList<>();
-
-        for (DetachedTimestampFile fileTimestamp : fileTimestamps) {
-
-            byte[] bytesRandom16 = new byte[16];
-            try {
-                bytesRandom16 = Utils.randBytes(16);
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            }
-            // nonce_appended_stamp = file_timestamp.timestamp.ops.add(com.eternitywall.ots.op.OpAppend(os.urandom(16)))
-            Op opAppend = new OpAppend(bytesRandom16);
-            Timestamp nonceAppendedStamp = fileTimestamp.timestamp.ops.get(opAppend);
-            if (nonceAppendedStamp == null) {
-                nonceAppendedStamp = new Timestamp(opAppend.call(fileTimestamp.timestamp.msg));
-                fileTimestamp.timestamp.ops.put(opAppend, nonceAppendedStamp);
-            }
-
-            // merkle_root = nonce_appended_stamp.ops.add(com.eternitywall.ots.op.OpSHA256())
-            Op opSHA256 = new OpSHA256();
-            Timestamp merkleRoot = nonceAppendedStamp.ops.get(opSHA256);
-            if (merkleRoot == null) {
-                merkleRoot = new Timestamp(opSHA256.call(nonceAppendedStamp.msg));
-                nonceAppendedStamp.ops.put(opSHA256, merkleRoot);
-            }
-
-            merkleRoots.add(merkleRoot);
-        }
-
-        // Markle root
-        Timestamp merkleTip = Merkle.makeMerkleTree(merkleRoots);
-        return merkleTip;
     }
 
     public static byte[] stamp(Timestamp merkleTip,  List<String> calendarsUrl, Integer m, HashMap<String,String> privateCalendarsUrl) {
@@ -390,7 +341,7 @@ public class OpenTimestamps {
      * @param m Number of calendars to use.
      * @return The created timestamp.
      */
-    public static Timestamp create(Timestamp timestamp, List<String> calendarUrls, Integer m, HashMap<String, String> privateCalendarUrls) {
+    private static Timestamp create(Timestamp timestamp, List<String> calendarUrls, Integer m, HashMap<String,String> privateCalendarUrls) {
 
         int capacity = calendarUrls.size()+privateCalendarUrls.size();
         ExecutorService executor = Executors.newFixedThreadPool(4);
@@ -446,7 +397,11 @@ public class OpenTimestamps {
             try {
                 Optional<Timestamp> optionalStamp = queue.take();
                 if(optionalStamp.isPresent()) {
-                    timestamp.merge(optionalStamp.get());
+                    try {
+                        timestamp.merge(optionalStamp.get());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     count++;
                 }
                 if(count >= m){
@@ -465,6 +420,52 @@ public class OpenTimestamps {
         executor.shutdown();
 
         return timestamp;
+    }
+
+
+
+    /**
+     * Make Merkle Tree.
+     * @param hashes The list of Hash to merklefy.
+     * @return merkle tip timestamp.
+     */
+    public static Timestamp makeMerkleTree(List<Hash> hashes, OpCrypto opCrypto){
+        List<DetachedTimestampFile> fileTimestamps = new ArrayList<>();
+
+        for (Hash hash : hashes){
+            DetachedTimestampFile fileTimestamp = DetachedTimestampFile.from(opCrypto, hash);
+            fileTimestamps.add(fileTimestamp);
+        }
+
+        return OpenTimestamps.makeMerkleTree(fileTimestamps);
+
+    }
+
+    /**
+     * Make Merkle Tree.
+     * @param fileTimestamps The list of DetachedTimestampFile.
+     * @return merkle tip timestamp.
+     */
+    public static Timestamp makeMerkleTree(List<DetachedTimestampFile> fileTimestamps){
+        List<Timestamp> merkleRoots = new ArrayList<>();
+
+        for (DetachedTimestampFile fileTimestamp : fileTimestamps) {
+
+            byte[] bytesRandom16 = new byte[16];
+            try {
+                bytesRandom16 = Utils.randBytes(16);
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
+            // nonce_appended_stamp = file_timestamp.timestamp.ops.add(com.eternitywall.ots.op.OpAppend(os.urandom(16)))
+            Timestamp nonceAppendedStamp = fileTimestamp.timestamp.add(new OpAppend(bytesRandom16));
+            // merkle_root = nonce_appended_stamp.ops.add(com.eternitywall.ots.op.OpSHA256())
+            Timestamp merkleRoot = nonceAppendedStamp.add(new OpSHA256());
+            merkleRoots.add(merkleRoot);
+        }
+
+        Timestamp merkleTip = Merkle.makeMerkleTree(merkleRoots);
+        return merkleTip;
     }
 
     /**
@@ -700,7 +701,11 @@ public class OpenTimestamps {
                     Calendar calendar = new Calendar(calendarUrl);
                     Timestamp upgradedStamp = OpenTimestamps.upgrade(subStamp, calendar, commitment, existingAttestations);
                     if(upgradedStamp != null) {
-                        subStamp.merge(upgradedStamp);
+                        try {
+                            subStamp.merge(upgradedStamp);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         upgraded = true;
                         return upgraded;
                     }

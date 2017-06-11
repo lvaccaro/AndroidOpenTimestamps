@@ -4,66 +4,40 @@ import com.eternitywall.ots.op.OpAppend;
 import com.eternitywall.ots.op.OpPrepend;
 import com.eternitywall.ots.op.OpSHA256;
 
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 
-import static jdk.nashorn.internal.objects.Global.undefined;
-
-/**
- * Created by luca on 13/05/2017.
- */
 
 public class Merkle {
     /** Concatenate left and right, then perform a unary operation on them left and right can be either timestamps or bytes.
      * Appropriate intermediary append/prepend operations will be created as needed for left and right.
      * */
 
+
     public static Timestamp catThenUnaryOp( Timestamp left, Timestamp right) {
 
         // rightPrependStamp = right.ops.add(OpPrepend(left.msg))
-        OpPrepend opPrepend = new OpPrepend(left.msg);
-        Timestamp rightPrependStamp = right.ops.get(opPrepend);
-        if (rightPrependStamp == null) {
-            rightPrependStamp = new Timestamp(opPrepend.call(right.msg));
-            right.ops.put(opPrepend, rightPrependStamp);
-        }
+        Timestamp rightPrependStamp = right.add(new OpPrepend(left.msg));
 
         // Left and right should produce the same thing, so we can set the timestamp of the left to the right.
         // left.ops[OpAppend(right.msg)] = right_prepend_stamp
         // leftAppendStamp = left.ops.add(OpAppend(right.msg))
-        OpAppend opAppend = new OpAppend(right.msg);
-        Timestamp leftPrependStamp = left.ops.get(opAppend);
-        if (leftPrependStamp == null) {
-            leftPrependStamp = new Timestamp(opAppend.call(left.msg));
-            left.ops.put(opAppend, leftPrependStamp);
-        }
-        left.ops.put(opAppend, rightPrependStamp);
+        //Timestamp leftPrependStamp = left.add(new OpAppend(right.msg));
+        left.ops.put(new OpAppend(right.msg), rightPrependStamp);
 
         // return rightPrependStamp.ops.add(unaryOpCls())
-        OpSHA256 opUnary = new OpSHA256();
-        Timestamp res = rightPrependStamp.ops.get(opUnary);
-        if (res == null) {
-            res = new Timestamp(opUnary.call(rightPrependStamp.msg));
-            rightPrependStamp.ops.put(opUnary, res);
-        }
-
+        Timestamp res = rightPrependStamp.add(new OpSHA256());
         return res;
     }
 
-    static Timestamp catSha256(Timestamp left, Timestamp right) {
+    public static Timestamp catSha256(Timestamp left, Timestamp right) {
         return Merkle.catThenUnaryOp( left, right);
     }
 
-    static Timestamp catSha256d(Timestamp left, Timestamp right) {
+    public static Timestamp catSha256d(Timestamp left, Timestamp right) {
         Timestamp sha256Timestamp = Merkle.catSha256(left, right);
         // res = sha256Timestamp.ops.add(OpSHA256());
-        OpSHA256 opSHA256 = new OpSHA256();
-        Timestamp res = sha256Timestamp.ops.get(opSHA256);
-        if (res == null) {
-            res = new Timestamp(opSHA256.call(sha256Timestamp.msg));
-            sha256Timestamp.ops.put(opSHA256, res);
-        }
+        Timestamp res = sha256Timestamp.add(new OpSHA256());
         return res;
     }
 
@@ -75,42 +49,6 @@ public class Merkle {
      the algorithm will not be changed in the future.
      Returns the timestamp for the tip of the tree.
      */
-    /*
-    static makeMerkleTreeIterator(timestamps) {
-        let stamps = timestamps;
-        let nextStamps = [];
-        let prevStamp;
-
-        do {
-            stamps = stamps[Symbol.iterator]();
-
-            prevStamp = undefined;
-            try {
-                prevStamp = stamps.next().value;
-            } catch (err) {
-                return 'Need at least one timestamp';
-            }
-
-            nextStamps = [];
-            for (const stamp of stamps) {
-                if (prevStamp === undefined) {
-                    prevStamp = stamp;
-                } else {
-                    nextStamps.push(Merkle.catSha256(prevStamp, stamp));
-                    prevStamp = undefined;
-                }
-            }
-
-            if (nextStamps.length > 0) {
-                if (prevStamp !== undefined) {
-                    nextStamps.push(prevStamp);
-                }
-                stamps = nextStamps;
-            }
-        } while (nextStamps.length > 0);
-        return prevStamp;
-    }
-*/
     public static Timestamp makeMerkleTree(List<Timestamp> timestamps) {
         List<Timestamp> stamps = timestamps;
         Timestamp prevStamp = null;

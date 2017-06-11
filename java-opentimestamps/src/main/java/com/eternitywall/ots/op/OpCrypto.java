@@ -14,13 +14,12 @@ import com.eternitywall.ots.StreamDeserializationContext;
  * the size of the result they return is fixed. Additionally, they're the only
  * type of operation that can be applied directly to a stream.
  *
- * @see OpUnary
+ * @see com.eternitywall.ots.op.OpUnary
  */
 public class OpCrypto extends OpUnary {
 
     private static Logger log = Logger.getLogger(OpCrypto.class.getName());
 
-    byte[] arg;
     public String _TAG_NAME = "";
 
     public String _HASHLIB_NAME() {
@@ -33,12 +32,6 @@ public class OpCrypto extends OpUnary {
 
     OpCrypto() {
         super();
-        this.arg = new byte[]{};
-    }
-
-    OpCrypto(byte[] arg_) {
-        super(arg_);
-        this.arg = arg_;
     }
 
     public static Op deserializeFromTag(StreamDeserializationContext ctx, byte tag) {

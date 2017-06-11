@@ -41,8 +41,8 @@ public class DetachedTimestampFile {
      */
     static byte MAJOR_VERSION = 1;
 
-    public Op fileHashOp;
-    public Timestamp timestamp;
+    Op fileHashOp;
+    Timestamp timestamp;
 
     public DetachedTimestampFile(Op fileHashOp, Timestamp timestamp) {
         this.fileHashOp = fileHashOp;
@@ -55,6 +55,14 @@ public class DetachedTimestampFile {
      */
     public byte[] fileDigest() {
         return this.timestamp.msg;
+    }
+
+    /**
+     * Retrieve the internal timestamp.
+     * @return the timestamp.
+     */
+    public Timestamp getTimestamp() {
+        return this.timestamp;
     }
 
     /**

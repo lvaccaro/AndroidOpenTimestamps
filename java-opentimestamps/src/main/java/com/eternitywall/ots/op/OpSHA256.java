@@ -2,6 +2,8 @@ package com.eternitywall.ots.op;
 
 import com.eternitywall.ots.StreamDeserializationContext;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
@@ -9,7 +11,7 @@ import java.util.logging.Logger;
  * Cryptographic operation tag numbers taken from RFC4880, although it's not
  * guaranteed that they'll continue to match that RFC in the future.
  *
- * @see OpCrypto
+ * @see com.eternitywall.ots.op.OpCrypto
  */
 public class OpSHA256 extends OpCrypto {
 
@@ -40,12 +42,6 @@ public class OpSHA256 extends OpCrypto {
 
     public OpSHA256() {
         super();
-        this.arg = new byte[]{};
-    }
-
-    public OpSHA256(byte[] arg_) {
-        super(new byte[]{});
-        this.arg = arg_;
     }
 
     @Override
@@ -57,4 +53,8 @@ public class OpSHA256 extends OpCrypto {
         return OpCrypto.deserializeFromTag(ctx, tag);
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        return (obj instanceof OpSHA256);
+    }
 }

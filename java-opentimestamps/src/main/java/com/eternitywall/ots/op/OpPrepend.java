@@ -3,12 +3,13 @@ package com.eternitywall.ots.op;
 import com.eternitywall.ots.StreamDeserializationContext;
 import com.eternitywall.ots.Utils;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 /**
  * Prepend a prefix to a message.
  *
- * @see OpBinary
+ * @see com.eternitywall.ots.op.OpBinary
  */
 public class OpPrepend extends OpBinary {
 
@@ -30,7 +31,7 @@ public class OpPrepend extends OpBinary {
         return "prepend";
     }
 
-    OpPrepend() {
+    public OpPrepend() {
         super();
         this.arg = new byte[]{};
     }
@@ -47,5 +48,13 @@ public class OpPrepend extends OpBinary {
 
     public static Op deserializeFromTag(StreamDeserializationContext ctx, byte tag) {
         return OpBinary.deserializeFromTag(ctx, tag);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(!(obj instanceof OpAppend)){
+            return false;
+        }
+        return Arrays.equals(this.arg,((OpAppend)obj).arg);
     }
 }
