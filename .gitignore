@@ -3,7 +3,12 @@
 /local.properties
 /.idea/workspace.xml
 /.idea/libraries
+.idea
 .DS_Store
+javakeystore.jks
+gradle/
+gradlew
+app/app-release.apk
 /build
 /captures
 .externalNativeBuild

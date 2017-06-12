@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -13,13 +14,18 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
 import com.eternitywall.opentimestamps.IOUtil;
 import com.eternitywall.opentimestamps.R;
 import com.eternitywall.opentimestamps.adapters.FolderAdapter;
 import com.eternitywall.opentimestamps.adapters.ItemAdapter;
+import com.eternitywall.opentimestamps.dbs.TimestampDBHelper;
 import com.eternitywall.opentimestamps.models.Folder;
+import com.eternitywall.ots.Hash;
+import com.eternitywall.ots.StreamSerializationContext;
+import com.eternitywall.ots.Timestamp;
 import com.eternitywall.ots.Utils;
 
 import java.io.ByteArrayInputStream;
@@ -32,6 +38,7 @@ import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class FileActivity extends AppCompatActivity {
 
@@ -39,6 +46,7 @@ public class FileActivity extends AppCompatActivity {
     private ItemAdapter mAdapter;
     private LinkedHashMap<String,String> mDataset;
     private RecyclerView.LayoutManager mLayoutManager;
+    TimestampDBHelper timestampDBHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +74,17 @@ public class FileActivity extends AppCompatActivity {
         mAdapter = new ItemAdapter(mDataset);
         mRecyclerView.setAdapter(mAdapter);
 
+        // Set button
+        findViewById(R.id.btnInfo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onInfoClick();
+            }
+        });
+
+        // Check DB
+        timestampDBHelper = new TimestampDBHelper(this);
+
         // Get intent file
         Intent intent = getIntent();
         if (Intent.ACTION_SEND.equals(intent.getAction())) {
@@ -86,38 +105,98 @@ public class FileActivity extends AppCompatActivity {
         }
     }
 
-    void refresh (Uri uri){
-        ContentResolver contentResolver = getContentResolver();
+    Timestamp timestamp;
+    byte[] hash;
 
-        mDataset.put("Name",uri.getLastPathSegment());
-        mDataset.put("Uri",uri.toString());
-        mDataset.put("Type",contentResolver.getType(uri).toString());
 
-        try {
-            // Read file
-            InputStream inputStream = contentResolver.openInputStream(uri);
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int count = inputStream.read(buffer);
-            outputStream.write(buffer);
-            while (count >= 0) {
-                count = inputStream.read(buffer);
-                outputStream.write(buffer);
+
+    private void refresh (final Uri uri) {
+        final ContentResolver contentResolver = getContentResolver();
+
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+
+
+                try {
+                    // Read file
+                    InputStream inputStream = contentResolver.openInputStream(uri);
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    byte[] buffer = new byte[1024];
+                    int count = inputStream.read(buffer);
+                    while (count >= 0) {
+                        outputStream.write(buffer,0,count);
+                        count = inputStream.read(buffer);
+                    }
+
+                    // Calculate Hash
+                    hash = IOUtil.SHA256(outputStream.toByteArray());
+                    Log.d("FILE", "HASH: "+IOUtil.bytesToHex(hash));
+
+                    // check hash into DB
+                    timestamp = timestampDBHelper.getTimestamp(hash);
+                    if(timestamp == null){
+                        mDataset.put("OTS PROOF", "File not timestamped");
+                    } else {
+                        Log.d("FILE", timestamp.strTree(0));
+                        mDataset.put("OTS PROOF", IOUtil.bytesToHex(getOts()));
+                    }
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    return false;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+                return true;
             }
 
-            // Calculate Hash
-            byte[] hash = IOUtil.SHA256(outputStream.toByteArray());
-            mDataset.put("SHA256", Utils.bytesToHex(hash));
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+                mAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            protected void onPostExecute(Boolean success) {
+                super.onPostExecute(success);
+
+                mDataset.put("Name",uri.getLastPathSegment());
+                mDataset.put("Uri",uri.toString());
+                mDataset.put("Type",contentResolver.getType(uri).toString());
+                mDataset.put("HASH", IOUtil.bytesToHex(hash));
+                if(timestamp == null){
+                    mDataset.put("OTS PROOF", "File not timestamped");
+                } else {
+                    mDataset.put("OTS PROOF", IOUtil.bytesToHex(getOts()));
+                }
+                mAdapter.notifyDataSetChanged();
+            }
+        }.execute();
+    }
+
+
+    public byte[] getOts(){
+        if(timestamp == null){
+            return null;
         }
+        StreamSerializationContext ctx = new StreamSerializationContext();
+        timestamp.serialize(ctx);
+        return ctx.getOutput();
+    }
 
-        mAdapter.notifyDataSetChanged();
+    public void onInfoClick() {
+        String ots = IOUtil.bytesToHex(getOts());
+        String url = "https://opentimestamps.org/info.html?ots=";
+        url += ots;
+        Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setData(Uri.parse(url));
+        startActivity(i);
     }
 
 }

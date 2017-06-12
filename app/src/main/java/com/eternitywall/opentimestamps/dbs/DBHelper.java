@@ -55,7 +55,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     protected static final String SQL_CREATE_TIMESTAMPS = "CREATE TABLE " + TABLE_TIMESTAMPS + " (" +
             " " + KEY_ID + " INTEGER PRIMARY KEY," +
-            " " + KEY_MSG + " UNIQUE BLOB, " +
+            " " + KEY_MSG + " BLOB, " +
             " " + KEY_SERIALIZE + " BLOB )";
 
     // table delete statement

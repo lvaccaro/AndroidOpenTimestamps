@@ -51,4 +51,19 @@ public class IOUtil {
         calendar.setTimeInMillis(milliSeconds);
         return formatter.format(calendar.getTime());
     }
+
+    public static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
+    }
+
+    public static void arrayFill(byte[] array, byte value) {
+        for (int i = 0; i < array.length; i++)
+        {
+            array[i] = value;
+        }
+    }
 }

@@ -29,6 +29,7 @@ import com.eternitywall.opentimestamps.adapters.FolderAdapter;
 import com.eternitywall.opentimestamps.adapters.ItemAdapter;
 import com.eternitywall.opentimestamps.dbs.DBHelper;
 import com.eternitywall.opentimestamps.dbs.FolderDBHelper;
+import com.eternitywall.opentimestamps.dbs.TimestampDBHelper;
 import com.eternitywall.opentimestamps.models.Folder;
 import com.eternitywall.ots.DetachedTimestampFile;
 import com.eternitywall.ots.Hash;
@@ -47,6 +48,7 @@ import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -55,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
     final int PERMISSION_EXTERNAL_STORAGE=100;
     Storage storage;
     FolderDBHelper dbHelper;
+    TimestampDBHelper timestampDBHelper;
 
     private RecyclerView mRecyclerView;
     private FolderAdapter mAdapter;
@@ -134,22 +137,16 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         // FOLDER ROOT
         {
             Folder folder = new Folder();
-            folder.state = Folder.State.NOTHING;
             folder.name = "External Storage";
             folder.roodDir = ".";
-            folder.lastSync = 0;
-            folder.enabled = false;
             folder.id = dbHelper.create(folder);
             mFolders.add(folder);
         }
 
         {
             Folder folder = new Folder();
-            folder.state = Folder.State.NOTHING;
             folder.name = "Pictures";
             folder.roodDir = Environment.DIRECTORY_PICTURES;
-            folder.lastSync = 0;
-            folder.enabled = false;
             folder.id = dbHelper.create(folder);
             folder.getNestedFiles(storage);
             mFolders.add(folder);
@@ -157,22 +154,16 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
         {
             Folder folder = new Folder();
-            folder.state = Folder.State.NOTHING;
             folder.name = "Documents";
             folder.roodDir = Environment.DIRECTORY_DOCUMENTS;
-            folder.lastSync = 0;
-            folder.enabled = false;
             folder.id = dbHelper.create(folder);
             folder.getNestedFiles(storage);
             mFolders.add(folder);
         }
         {
             Folder folder = new Folder();
-            folder.state = Folder.State.NOTHING;
             folder.name = "Camera";
             folder.roodDir = Environment.DIRECTORY_DCIM;
-            folder.lastSync = 0;
-            folder.enabled = false;
             folder.id = dbHelper.create(folder);
             folder.getNestedFiles(storage);
             mFolders.add(folder);
@@ -191,11 +182,13 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
         // Check DB
         dbHelper = new FolderDBHelper(this);
-        dbHelper.clearAll();
+        //dbHelper.clearAll();
         mFolders = dbHelper.getAll();
         if (mFolders.size()==0){
             initDB();
         }
+        timestampDBHelper = new TimestampDBHelper(this);
+        //timestampDBHelper.clearAll();
 
         // Specify and fill the adapter
         mAdapter = new FolderAdapter(this, mFolders);
@@ -234,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
     public void onDetailClick(View view, int position, long id) {
         if (mFolders.get(position).ots.length == 0)
             return;
-        String ots = Utils.bytesToHex(mFolders.get(position).ots);
+        String ots = IOUtil.bytesToHex(mFolders.get(position).ots);
         String url = "https://opentimestamps.org/info.html?ots=";
         url += ots;
         Intent i = new Intent(Intent.ACTION_VIEW);
@@ -327,9 +320,11 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                 List<Hash> hashes = new ArrayList<>();
                 for (File file : files) {
                     try {
+                        Log.d("STAMP", "FILE: "+file.getName());
                         byte[] bytes = IOUtil.readFile(file);
                         Hash sha256 = new Hash(IOUtil.SHA256(bytes));
                         hashes.add(sha256);
+                        Log.d("STAMP", "HASH: "+IOUtil.bytesToHex(sha256.getValue()));
                     } catch (NoSuchAlgorithmException e) {
                         e.printStackTrace();
                     } catch (IOException e) {
@@ -346,24 +341,20 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                 // Stamp the markled list
                 Timestamp merkleTip = OpenTimestamps.makeMerkleTree(fileTimestamps);
                 folder.hash = merkleTip.getDigest();
+                Log.d("STAMP", "MERKLE: "+IOUtil.bytesToHex(folder.hash));
+                //private static Timestamp create(Timestamp timestamp, List<String> calendarUrls, Integer m, HashMap<String,String> privateCalendarUrls) {
                 folder.ots = OpenTimestamps.stamp(merkleTip, null, 0, null);
-                Log.d("OTS", Utils.bytesToHex(folder.ots));
+                Log.d("STAMP", "OTS: "+IOUtil.bytesToHex(folder.ots));
 
                 // Stamp proof info
                 String info = OpenTimestamps.info(folder.ots);
-                Log.d("OTS", info);
+                Log.d("STAMP", "INFO: "+info);
 
                 // Save the ots
 
-                // Refresh UI
-        /*myDataset.clear();
-        for (int i=0;i<files.size();i++){
-            StreamSerializationContext css = new StreamSerializationContext();
-            fileTimestamps.get(i).serialize(css);
-            String hex = Utils.bytesToHex(css.getOutput());
-            Log.d(files.get(i).getPath(),hex);
-            myDataset.put(files.get(i).getPath(),hex);
-        }*/
+                for (DetachedTimestampFile file : fileTimestamps) {
+                    timestampDBHelper.addTimestamp(file.getTimestamp());
+                }
                 return true;
             }
 

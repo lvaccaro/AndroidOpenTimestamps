@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TimestampDBHelper extends SerializedTimestampDBHelper {
 
@@ -30,14 +31,19 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
     private Timestamp popTimestamp(byte[] msg){
         // Get a timestamp, non-recursively
         SerializedTimestamp serializedTimestamp = super.get(msg);
+        if (serializedTimestamp == null ){
+            return null;
+        }
         StreamDeserializationContext ctx = new StreamDeserializationContext(serializedTimestamp.serialized);
 
         Timestamp timestamp = new Timestamp(msg);
-        for (int i = 0; i < ctx.readVaruint(); i++){
+        int count = ctx.readVaruint();
+        for (int i = 0; i < count; i++){
             TimeAttestation attestation = TimeAttestation.deserialize(ctx);
             timestamp.attestations.add(attestation);
         }
-        for (int i = 0; i < ctx.readVaruint(); i++){
+        count = ctx.readVaruint();
+        for (int i = 0; i < count; i++){
             Op op = Op.deserialize(ctx);
             timestamp.add(op);
         }
@@ -47,12 +53,24 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
     public Timestamp getTimestamp(byte[] msg){
         // Get the timestamp for a given message
         Timestamp timestamp = popTimestamp(msg);
+        if (timestamp == null){
+            return null;
+        }
 
-        for (Map.Entry<Op, Timestamp> entry : timestamp.ops.entrySet()) {
+        Set<Op> keys = timestamp.ops.keySet();
+        for (Op op : keys) {
+            timestamp.put(op, getTimestamp(timestamp.ops.get(op).msg));
+        }
+        /*
+        Set<Map.Entry<Op, Timestamp>> entries = timestamp.ops.entrySet();
+        for (int i = 0 ; i < entries.size() ; i++){
+            Map.Entry<Op, Timestamp> entry = entries
+        }
+        for (Map.Entry<Op, Timestamp> entry : entries) {
             Timestamp stamp = entry.getValue();
             Op op = entry.getKey();
-            timestamp.ops.put(op, getTimestamp(stamp.msg));
-        }
+            timestamp.put(op, getTimestamp(stamp.msg));
+        }*/
         return timestamp;
     }
 
@@ -72,11 +90,18 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
             op.serialize(ctx);
         }
 
-        SerializedTimestamp serializedTimestamp = new SerializedTimestamp();
-        serializedTimestamp.msg = new_timestamp.msg;
-        serializedTimestamp.serialized = ctx.getOutput();
-        create(serializedTimestamp);
-
+        SerializedTimestamp serializedTimestamp = get(new_timestamp.msg);
+        if (serializedTimestamp == null){
+            // check if not exist -> create
+            serializedTimestamp = new SerializedTimestamp();
+            serializedTimestamp.msg = new_timestamp.msg;
+            serializedTimestamp.serialized = ctx.getOutput();
+            serializedTimestamp.id = create(serializedTimestamp);
+        } else {
+            // check if just exist -> update
+            serializedTimestamp.serialized = ctx.getOutput();
+            update(serializedTimestamp);
+        }
     }
 
     public void addTimestamp(Timestamp new_timestamp){
