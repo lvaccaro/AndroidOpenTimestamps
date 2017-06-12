@@ -60,4 +60,8 @@ public class OpRIPEMD160 extends OpCrypto {
         return (obj instanceof OpRIPEMD160);
     }
 
+    @Override
+    public int hashCode(){
+        return _TAG;
+    }
 }

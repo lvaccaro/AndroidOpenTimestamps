@@ -57,4 +57,9 @@ public class OpPrepend extends OpBinary {
         }
         return Arrays.equals(this.arg,((OpAppend)obj).arg);
     }
+
+    @Override
+    public int hashCode(){
+        return _TAG ^ this.arg.hashCode();
+    }
 }

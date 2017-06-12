@@ -46,4 +46,8 @@ public abstract class OpUnary extends Op {
         return this._TAG_NAME();
     }
 
+    @Override
+    public int hashCode(){
+        return _TAG;
+    }
 }

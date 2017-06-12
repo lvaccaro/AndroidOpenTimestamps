@@ -62,4 +62,8 @@ public class OpSHA1 extends OpCrypto {
         return (obj instanceof OpSHA1);
     }
 
+    @Override
+    public int hashCode(){
+        return _TAG;
+    }
 }
