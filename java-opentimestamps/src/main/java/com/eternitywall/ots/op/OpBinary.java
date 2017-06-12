@@ -54,7 +54,7 @@ public abstract class OpBinary extends Op implements Comparable<Op> {
 
     @Override
     public String toString() {
-        return this._TAG_NAME() + ' ' + DatatypeConverter.printHexBinary(this.arg).toLowerCase();
+        return this._TAG_NAME() + ' ' + Utils.bytesToHex(this.arg).toLowerCase();
     }
 
 

@@ -51,7 +51,7 @@ public class OpenTimestamps {
         StreamDeserializationContext ctx = new StreamDeserializationContext(ots);
         DetachedTimestampFile detachedTimestampFile = DetachedTimestampFile.deserialize(ctx);
 
-        String fileHash = DatatypeConverter.printHexBinary(detachedTimestampFile.timestamp.msg).toLowerCase();
+        String fileHash = Utils.bytesToHex(detachedTimestampFile.timestamp.msg).toLowerCase();
         String hashOp = ((OpCrypto) detachedTimestampFile.fileHashOp)._TAG_NAME();
 
         String firstLine = "File " + hashOp + " hash: " + fileHash + '\n';
@@ -67,7 +67,7 @@ public class OpenTimestamps {
         if (timestamp == null) {
             return "No timestamp";
         }
-        String fileHash = DatatypeConverter.printHexBinary(timestamp.msg).toLowerCase();
+        String fileHash = Utils.bytesToHex(timestamp.msg).toLowerCase();
         String firstLine = "Hash: " + fileHash + '\n';
         return firstLine + "Timestamp:\n" + timestamp.strTree(0);
     }
@@ -572,7 +572,7 @@ public class OpenTimestamps {
 
         byte[] detachedFileDigest = detachedTimestamp.fileDigest();
         if (!Arrays.equals(actualFileDigest.getValue(), detachedFileDigest)) {
-            log.severe("Expected digest " + DatatypeConverter.printHexBinary(detachedTimestamp.fileDigest()).toLowerCase());
+            log.severe("Expected digest " + Utils.bytesToHex(detachedTimestamp.fileDigest()).toLowerCase());
             log.severe("File does not match original!");
 
         }

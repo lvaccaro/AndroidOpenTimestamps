@@ -66,7 +66,7 @@ public class Calendar{
             headers.put("Content-Type","application/x-www-form-urlencoded");
 
             if (key != null ) {
-                String signature = key.signMessage(DatatypeConverter.printHexBinary(digest).toLowerCase());
+                String signature = key.signMessage(Utils.bytesToHex(digest).toLowerCase());
                 headers.put("x-signature", signature);
             }
 
@@ -105,7 +105,7 @@ public class Calendar{
             headers.put("User-Agent","java-opentimestamps");
             headers.put("Content-Type","application/x-www-form-urlencoded");
 
-            URL obj = new URL(url + "/timestamp/" + DatatypeConverter.printHexBinary(commitment).toLowerCase());
+            URL obj = new URL(url + "/timestamp/" + Utils.bytesToHex(commitment).toLowerCase());
             Request task = new Request(obj);
             task.setHeaders(headers);
             Response response = task.call();
