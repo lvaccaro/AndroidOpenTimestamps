@@ -1,6 +1,7 @@
 package com.eternitywall.opentimestamps.activities;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
@@ -132,7 +133,17 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         }
     }
 
+    private void clearDB(){
+        if (dbHelper == null) {
+            dbHelper = new FolderDBHelper(this);
+        }
+        if (timestampDBHelper == null){
+            timestampDBHelper = new TimestampDBHelper(this);
+        }
+        dbHelper.clearAll();
+        timestampDBHelper.clearAll();
 
+    }
     private void initDB(){
         // FOLDER ROOT
         {
@@ -211,12 +222,35 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
-            case R.id.action_stamp:
+            case R.id.action_check:
                 for (Folder folder : mFolders){
                     if(folder.enabled==true) {
                         check(folder, false);
                     }
                 }
+                return true;
+            case R.id.action_clear:
+                AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+                alert.setTitle("Warning")
+                        .setMessage("Are you sure to reset all timestamp proof?")
+                        .setPositiveButton(getResources().getString(android.R.string.yes), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                clearDB();
+                                for (Folder folder : mFolders){
+                                    if(folder.enabled==true) {
+                                        check(folder, false);
+                                    }
+                                }
+                            }
+                        })
+                        .setNegativeButton(getResources().getString(android.R.string.no), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        })
+                        .show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

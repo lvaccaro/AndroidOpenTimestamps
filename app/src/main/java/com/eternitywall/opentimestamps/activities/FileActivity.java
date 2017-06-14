@@ -17,16 +17,21 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import com.eternitywall.opentimestamps.GoogleUrlShortener;
 import com.eternitywall.opentimestamps.IOUtil;
 import com.eternitywall.opentimestamps.R;
 import com.eternitywall.opentimestamps.adapters.FolderAdapter;
 import com.eternitywall.opentimestamps.adapters.ItemAdapter;
 import com.eternitywall.opentimestamps.dbs.TimestampDBHelper;
 import com.eternitywall.opentimestamps.models.Folder;
+import com.eternitywall.ots.Calendar;
+import com.eternitywall.ots.DetachedTimestampFile;
 import com.eternitywall.ots.Hash;
+import com.eternitywall.ots.OpenTimestamps;
 import com.eternitywall.ots.StreamSerializationContext;
 import com.eternitywall.ots.Timestamp;
 import com.eternitywall.ots.Utils;
+import com.eternitywall.ots.op.OpSHA256;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,6 +41,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -107,6 +116,8 @@ public class FileActivity extends AppCompatActivity {
 
     Timestamp timestamp;
     byte[] hash;
+    byte[] ots;
+    Long date;
 
 
 
@@ -136,12 +147,20 @@ public class FileActivity extends AppCompatActivity {
 
                     // check hash into DB
                     timestamp = timestampDBHelper.getTimestamp(hash);
-                    if(timestamp == null){
-                        mDataset.put("OTS PROOF", "File not timestamped");
-                    } else {
+                    if(timestamp != null){
                         Log.d("FILE", timestamp.strTree(0));
-                        mDataset.put("OTS PROOF", IOUtil.bytesToHex(getOts()));
+                        ots = getOts();
                     }
+
+                    // verify OTS
+                    date = OpenTimestamps.verify(ots,hash);
+
+                    // upgrade
+                    if (date == null || date == 0){
+                        ots = OpenTimestamps.upgrade(ots);
+                        date = OpenTimestamps.verify(ots,hash);
+                    }
+
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     return false;
@@ -173,7 +192,20 @@ public class FileActivity extends AppCompatActivity {
                 if(timestamp == null){
                     mDataset.put("OTS PROOF", "File not timestamped");
                 } else {
-                    mDataset.put("OTS PROOF", IOUtil.bytesToHex(getOts()));
+                    mDataset.put("OTS PROOF", IOUtil.bytesToHex(ots));
+                }
+                if(date == null || date == 0){
+                    mDataset.put("Attestation", "Pending or Bad attestation");
+                } else {
+                    try{
+                        //Thu May 28 2015 17:41:18 GMT+0200 (CEST)
+                        DateFormat sdf = new SimpleDateFormat("DDD MMM dd yyyy hh:mm:ss Z T");
+                        Date netDate = (new Date(date));
+                        mDataset.put("Attestation", "Bitcoin attests data existed as of "+sdf.format(netDate));
+                    }
+                    catch(Exception ex){
+                        mDataset.put("Attestation", "Invalid date");
+                    }
                 }
                 mAdapter.notifyDataSetChanged();
             }
@@ -185,18 +217,35 @@ public class FileActivity extends AppCompatActivity {
         if(timestamp == null){
             return null;
         }
+        DetachedTimestampFile detachedTimestampFile = new DetachedTimestampFile(new OpSHA256(),timestamp);
         StreamSerializationContext ctx = new StreamSerializationContext();
-        timestamp.serialize(ctx);
+        detachedTimestampFile.serialize(ctx);
         return ctx.getOutput();
     }
 
     public void onInfoClick() {
-        String ots = IOUtil.bytesToHex(getOts());
-        String url = "https://opentimestamps.org/info.html?ots=";
-        url += ots;
-        Intent i = new Intent(Intent.ACTION_VIEW);
-        i.setData(Uri.parse(url));
-        startActivity(i);
+        new AsyncTask<Void, Void, Boolean>() {
+            String shortUrl = "";
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                String otsString = IOUtil.bytesToHex(ots);
+                String url = "https://opentimestamps.org/info.html?ots=";
+                url += otsString;
+                shortUrl = GoogleUrlShortener.shorten(url);
+                return true;
+            }
+
+            @Override
+            protected void onPostExecute(Boolean success) {
+                super.onPostExecute(success);
+
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setData(Uri.parse(shortUrl));
+                startActivity(i);
+            }
+        }.execute();
     }
+
 
 }

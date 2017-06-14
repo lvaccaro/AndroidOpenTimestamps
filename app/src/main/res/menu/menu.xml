@@ -2,8 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/action_stamp"
-        android:icon="@android:drawable/ic_menu_recent_history"
-        android:title="Stamp"
+        android:id="@+id/action_check"
+        android:icon="@drawable/ic_updating"
+        android:title="Check"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_clear"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:title="Reset" />
 </menu>

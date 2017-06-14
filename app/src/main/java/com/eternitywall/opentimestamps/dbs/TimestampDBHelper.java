@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
+import android.util.Log;
 
 import com.eternitywall.opentimestamps.models.Folder;
 import com.eternitywall.opentimestamps.models.SerializedTimestamp;
@@ -39,10 +40,20 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
         Timestamp timestamp = new Timestamp(msg);
         int count = ctx.readVaruint();
         for (int i = 0; i < count; i++){
+            if (i>0){
+                Log.d("","i>0");
+            }
             TimeAttestation attestation = TimeAttestation.deserialize(ctx);
-            timestamp.attestations.add(attestation);
+            if (timestamp.attestations.contains(attestation)){
+                timestamp.attestations.set(timestamp.attestations.indexOf(attestation) , attestation);
+            } else {
+                timestamp.attestations.add(attestation);
+            }
         }
         count = ctx.readVaruint();
+        if(count>1){
+            Log.d("","i>0");
+        }
         for (int i = 0; i < count; i++){
             Op op = Op.deserialize(ctx);
             timestamp.add(op);
@@ -59,6 +70,9 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
 
         Set<Op> keys = timestamp.ops.keySet();
         for (Op op : keys) {
+            if(keys.size()>1){
+                Log.d("","i>0");
+            }
             timestamp.put(op, getTimestamp(timestamp.ops.get(op).msg));
         }
         /*
