@@ -10,6 +10,7 @@ import com.eternitywall.ots.op.OpSHA256;
 import org.bitcoinj.core.DumpedPrivateKey;
 import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
+import org.json.JSONObject;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayInputStream;
@@ -745,4 +746,44 @@ public class OpenTimestamps {
         // args.cache.merge(upgraded_stamp)
         // sub_stamp.merge(upgraded_stamp)
     }
+
+/*
+    private JSONObject json(byte[] ots) {
+        JSONObject json = new JSONObject();
+        if (ots == null) {
+            json.put('result', 'KO');
+            json.put('error, ''No ots file');
+            return json;
+        }
+
+        let timestamp;
+
+        if (ots instanceof Timestamp) {
+            // Pass timestamp
+            timestamp = ots;
+            json.hash = Utils.bytesToHex(timestamp.msg);
+        } else {
+            // Deserialize timestamp from file
+            try {
+        const ctx = new Context.StreamDeserialization(ots);
+        const detachedTimestampFile = DetachedTimestampFile.DetachedTimestampFile.deserialize(ctx);
+                timestamp = detachedTimestampFile.timestamp;
+                json.hash = Utils.bytesToHex(timestamp.msg);
+                json.op = detachedTimestampFile.fileHashOp._HASHLIB_NAME();
+            } catch (err) {
+                json.result = 'KO';
+                json.error = 'Error deserialization ' + err;
+                return JSON.stringify(json);
+            }
+        }
+
+        try {
+            json.result = 'OK';
+            json.timestamp = timestamp.toJson();
+        } catch (err) {
+            json.result = 'KO';
+            json.error = 'Error parsing info ' + err;
+        }
+        return JSON.stringify(json);
+    }*/
 }

@@ -68,6 +68,6 @@ public abstract class OpBinary extends Op implements Comparable<Op> {
 
     @Override
     public int hashCode(){
-        return _TAG ^ this.arg.hashCode();
+        return _TAG ^ Arrays.hashCode(this.arg);
     }
 }

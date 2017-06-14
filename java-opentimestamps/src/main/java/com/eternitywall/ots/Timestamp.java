@@ -497,9 +497,16 @@ public class Timestamp {
         // nonce_appended_stamp = timestamp.ops.add(com.eternitywall.ots.op.OpAppend(os.urandom(16)))
         //Op opAppend = new OpAppend(bytes);
 
-        if (this.ops.containsKey(op)) {
-            return this.ops.get(op);
+        for (Map.Entry<Op, Timestamp> entry : this.ops.entrySet()) {
+            Timestamp ts = entry.getValue();
+            Op op_ = entry.getKey();
+            if (op.hashCode() == op_.hashCode()){
+                return ts;
+            }
         }
+        /*if (this.ops.containsKey(op)) {
+            return this.ops.get(op);
+        }*/
 
         Timestamp stamp = new Timestamp(op.call(this.msg));
         this.ops.put(op, stamp);

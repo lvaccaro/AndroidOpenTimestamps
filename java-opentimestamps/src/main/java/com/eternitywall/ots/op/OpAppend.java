@@ -60,6 +60,6 @@ public class OpAppend extends OpBinary {
 
     @Override
     public int hashCode(){
-        return _TAG ^ this.arg.hashCode();
+        return _TAG ^ Arrays.hashCode(this.arg);
     }
 }
