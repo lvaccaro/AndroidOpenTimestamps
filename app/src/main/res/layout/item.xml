@@ -20,6 +20,7 @@
         android:id="@+id/tvValue"
         android:clickable="false"
         android:focusable="false"
+        android:ellipsize="end"
         android:lines="2"/>
 
 </LinearLayout>

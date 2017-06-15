@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">OpenTimestamps</string>
     <string name="ots_info">OTS INFO</string>
+    <string name="show">show</string>
+    <string name="download">download</string>
 </resources>
