@@ -12,7 +12,6 @@ import org.bitcoinj.core.ECKey;
 import org.bitcoinj.core.NetworkParameters;
 import org.json.JSONObject;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -516,6 +515,7 @@ public class OpenTimestamps {
             detachedTimestamp = DetachedTimestampFile.deserialize(ctx);
         } catch (Exception e) {
             System.err.print("com.eternitywall.ots.StreamDeserializationContext error");
+            return null;
         }
 
         // Read STAMPED
@@ -621,7 +621,7 @@ public class OpenTimestamps {
                         }
                     }
 
-                    byte[] merkle = DatatypeConverter.parseHexBinary(blockInfo.getMerkleroot());
+                    byte[] merkle = Utils.hexToBytes(blockInfo.getMerkleroot());
                     byte[] message = Utils.arrayReverse(msg);
 
                     // One Bitcoin attestation is enought

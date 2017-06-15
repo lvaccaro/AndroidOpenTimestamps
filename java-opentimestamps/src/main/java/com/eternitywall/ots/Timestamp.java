@@ -494,9 +494,6 @@ public class Timestamp {
      * @return Returns the sub timestamp
      */
     public Timestamp add(Op op){
-        // nonce_appended_stamp = timestamp.ops.add(com.eternitywall.ots.op.OpAppend(os.urandom(16)))
-        //Op opAppend = new OpAppend(bytes);
-
         for (Map.Entry<Op, Timestamp> entry : this.ops.entrySet()) {
             Timestamp ts = entry.getValue();
             Op op_ = entry.getKey();
@@ -504,22 +501,42 @@ public class Timestamp {
                 return ts;
             }
         }
-        /*if (this.ops.containsKey(op)) {
+        /*
+        containsKey not always works
+        if (this.ops.containsKey(op)) {
             return this.ops.get(op);
         }*/
 
         Timestamp stamp = new Timestamp(op.call(this.msg));
-        this.ops.put(op, stamp);
+        if(!this.ops.containsKey(op)) {
+            this.ops.put(op, stamp);
+        }
         return stamp;
     }
 
-    public void put(Op op, Timestamp stamp){
+    /*public void put(Op op, Timestamp stamp){
+        boolean found = false;
+        for (Map.Entry<Op, Timestamp> entry : this.ops.entrySet()) {
+            Timestamp ts = entry.getValue();
+            Op op_ = entry.getKey();
+            if (op.hashCode() == op_.hashCode()){
+                found = true;
+            }
+        }
+        if(found == true){
+            found=false;
+        }
+        this.ops.put(op, stamp);
+        found=false;
+        /*
+        containsKey not always works / files compatibility problem
         if (this.ops.containsKey(op)) {
+            this.ops.remove(op)
             this.ops.replace(op,stamp);
         } else {
             this.ops.put(op, stamp);
-        }
-    }
+        }*/
+
 
     /**
      * Retrieve
