@@ -52,7 +52,7 @@ public class OpPrepend extends OpBinary {
 
     @Override
     public boolean equals(Object obj) {
-        if(!(obj instanceof OpAppend)){
+        if(!(obj instanceof OpPrepend)){
             return false;
         }
         return Arrays.equals(this.arg,((OpPrepend)obj).arg);
