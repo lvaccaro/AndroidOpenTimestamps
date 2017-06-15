@@ -39,11 +39,19 @@ import com.eternitywall.ots.StreamSerializationContext;
 import com.eternitywall.ots.Timestamp;
 import com.eternitywall.ots.Utils;
 import com.eternitywall.ots.op.OpSHA256;
+import com.squareup.okhttp.internal.Util;
 import com.sromku.simple.storage.SimpleStorage;
 import com.sromku.simple.storage.Storage;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
@@ -52,6 +60,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipOutputStream;
 
 public class MainActivity extends AppCompatActivity implements FolderAdapter.OnItemClickListener {
 
@@ -143,6 +155,9 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         dbHelper.clearAll();
         timestampDBHelper.clearAll();
 
+        initDB();
+        mAdapter.notifyDataSetChanged();
+
     }
     private void initDB(){
         // FOLDER ROOT
@@ -207,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         mRecyclerView.setAdapter(mAdapter);
 
         for (Folder folder : mFolders){
-            check(folder, false);
+            checking(folder, false);
         }
 
     }
@@ -221,16 +236,17 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
+        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+
         switch (item.getItemId()) {
             case R.id.action_check:
                 for (Folder folder : mFolders){
                     if(folder.enabled==true) {
-                        check(folder, false);
+                        checking(folder, false);
                     }
                 }
                 return true;
             case R.id.action_clear:
-                AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
                 alert.setTitle("Warning")
                         .setMessage("Are you sure to reset all timestamp proof?")
                         .setPositiveButton(getResources().getString(android.R.string.yes), new DialogInterface.OnClickListener() {
@@ -239,7 +255,29 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                                 clearDB();
                                 for (Folder folder : mFolders){
                                     if(folder.enabled==true) {
-                                        check(folder, false);
+                                        checking(folder, false);
+                                    }
+                                }
+                            }
+                        })
+                        .setNegativeButton(getResources().getString(android.R.string.no), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        })
+                        .show();
+                return true;
+            case R.id.action_export:
+
+                alert.setTitle("Warning")
+                        .setMessage("Are you sure to export all your proof files? The procedure requests a lots of time.")
+                        .setPositiveButton(getResources().getString(android.R.string.yes), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                for (Folder folder : mFolders){
+                                    if(folder.enabled==true) {
+                                        exporting(folder, getExternalCacheDir()+"/"+folder.name+".zip");
                                     }
                                 }
                             }
@@ -272,7 +310,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
     @Override
     public void onCheckingClick(View view, int position, long id) {
         if(mFolders.get(position).enabled == true) {
-            check(mFolders.get(position), true);
+            checking(mFolders.get(position), true);
         }
     }
 
@@ -281,7 +319,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         mFolders.get(position).enabled = true;
         dbHelper.update(mFolders.get(position));
 
-        check(mFolders.get(position),false);
+        checking(mFolders.get(position),false);
     }
 
     @Override
@@ -291,7 +329,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
     }
 
 
-    private void check(final Folder folder, final boolean runCallbackStamp){
+    private void checking(final Folder folder, final boolean runCallbackStamp){
 
         new AsyncTask<Void,Void,Boolean>() {
 
@@ -309,7 +347,11 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                 super.onPreExecute();
 
                 folder.state = Folder.State.CHECKING;
-                mAdapter.notifyDataSetChanged();
+                try {
+                    mAdapter.notifyItemChanged(mFolders.indexOf(folder));
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
             }
 
             @Override
@@ -322,7 +364,11 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                     folder.state = Folder.State.STAMPED;
                 else
                     folder.state = Folder.State.NOTUPDATED;
-                mAdapter.notifyDataSetChanged();
+                try {
+                    mAdapter.notifyItemChanged(mFolders.indexOf(folder));
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
 
                 if(runCallbackStamp) {
                     if (folder.lastSync == 0 && isAllStamped) {
@@ -331,7 +377,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                                 .setMessage("No file to Timestamp")
                                 .show();
                     } else if (!isAllStamped) {
-                        stamp(folder);
+                        hashing(folder);
                     }
                 }
             }
@@ -339,38 +385,14 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         }.execute();
     }
 
-    private void stamp(final Folder folder){
+    List<DetachedTimestampFile> fileTimestamps = new ArrayList<>();
 
+    private void hashing(final Folder folder) {
         new AsyncTask<Void,Integer,Boolean>() {
 
             @Override
             protected Boolean doInBackground(Void... params) {
                 List<File> files = folder.getNestedNotSynchedFiles(storage);
-                List<DetachedTimestampFile> fileTimestamps = new ArrayList<>();
-                Log.d("LIST", files.toString());
-
-                // Build hash digest list
-                /*List<Hash> hashes = new ArrayList<>();
-                for (File file : files) {
-                    try {
-                        Log.d("STAMP", "FILE: "+file.getName());
-                        byte[] bytes = IOUtil.readFile(file);
-                        Hash sha256 = new Hash(IOUtil.SHA256(bytes));
-                        hashes.add(sha256);
-                        Log.d("STAMP", "HASH: "+IOUtil.bytesToHex(sha256.getValue()));
-                    } catch (NoSuchAlgorithmException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                // Build detached file to timestamp from hash
-                fileTimestamps = new ArrayList<>();
-                for (Hash hash : hashes) {
-                    fileTimestamps.add(DetachedTimestampFile.from(new OpSHA256(), hash));
-                }
-                */
                 int countFiles = 0;
                 for (File file : files) {
                     Log.d("STAMP", "FILE: "+file.getName());
@@ -385,6 +407,40 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                     countFiles++;
                     publishProgress(countFiles);
                 }
+                return true;
+            }
+
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                folder.state = Folder.State.CHECKING;
+                mAdapter.notifyItemChanged(mFolders.indexOf(folder));
+            }
+
+            @Override
+            protected void onPostExecute(Boolean aBoolean) {
+                super.onPostExecute(aBoolean);
+                if (aBoolean==false)
+                    return;
+                mAdapter.notifyItemChanged(mFolders.indexOf(folder));
+                stamping(folder);
+            }
+
+            @Override
+            protected void onProgressUpdate(Integer... values) {
+                super.onProgressUpdate(values);
+                folder.countFiles = values[0];
+                mAdapter.notifyItemChanged(mFolders.indexOf(folder));
+            }
+        }.execute();
+    }
+
+    private void stamping(final Folder folder){
+
+        new AsyncTask<Void,Integer,Boolean>() {
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
 
                 // Stamp the markled list
                 Timestamp merkleTip = OpenTimestamps.makeMerkleTree(fileTimestamps);
@@ -393,13 +449,10 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                 //private static Timestamp create(Timestamp timestamp, List<String> calendarUrls, Integer m, HashMap<String,String> privateCalendarUrls) {
                 folder.ots = OpenTimestamps.stamp(merkleTip, null, 0, null);
                 Log.d("STAMP", "OTS: "+IOUtil.bytesToHex(folder.ots));
-
                 // Stamp proof info
                 String info = OpenTimestamps.info(folder.ots);
                 Log.d("STAMP", "INFO: "+info);
-
                 // Save the ots
-
                 for (DetachedTimestampFile file : fileTimestamps) {
                     timestampDBHelper.addTimestamp(file.getTimestamp());
                 }
@@ -409,9 +462,8 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
-
                 folder.state = Folder.State.STAMPING;
-                mAdapter.notifyDataSetChanged();
+                mAdapter.notifyItemChanged(mFolders.indexOf(folder));
             }
 
             @Override
@@ -423,16 +475,122 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                 folder.state = Folder.State.STAMPED;
                 folder.lastSync = System.currentTimeMillis();
                 dbHelper.update(folder);
-                mAdapter.notifyDataSetChanged();
+                mAdapter.notifyItemChanged(mFolders.indexOf(folder));
+            }
+        }.execute();
+    }
+
+
+
+
+    private void exporting(final Folder folder, final String zipFilePath){
+
+        AsyncTask<Void,Integer,Boolean> asyncTask = new AsyncTask<Void,Integer,Boolean>() {
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+
+
+                List<File> files = folder.getNestedNotSynchedFiles(storage);
+                FileOutputStream dest = null;
+                ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
+                BufferedInputStream origin = null;
+                int countFiles = 0;
+                int MAXSIZE= 1024*1024;
+                byte[] buffer = new byte[MAXSIZE];
+
+                try {
+                    dest = new FileOutputStream(zipFilePath);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+                if (files.size() == 0){
+                    return true;
+                }
+
+                try {
+                    for (File file : files) {
+
+                        Log.d("STAMP", "FILE: " + file.getName());
+
+                        Hash sha256 = new Hash(IOUtil.readFileSHA256(file));
+                        Timestamp stamp = timestampDBHelper.getTimestamp(sha256.getValue());
+                        StreamSerializationContext ctx = new StreamSerializationContext();
+                        stamp.serialize(ctx);
+
+
+                        String name = IOUtil.bytesToHex(sha256.getValue()) + ".ots";
+                        ZipEntry entry = new ZipEntry(name);
+                        try {
+                            out.putNextEntry(entry);
+                            ByteArrayInputStream is = new ByteArrayInputStream(ctx.getOutput());
+                            origin = new BufferedInputStream(is, MAXSIZE);
+
+                            int count;
+                            while ((count = origin.read(buffer, 0, MAXSIZE)) != -1) {
+                                out.write(buffer, 0, count);
+                            }
+                            origin.close();
+                            out.close();
+                        } catch (Exception e){
+                            e.printStackTrace();
+                        }
+
+                        countFiles++;
+                        publishProgress(countFiles);
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+                return true;
+
             }
 
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                folder.state = Folder.State.CHECKING;
+                folder.countFiles = 0;
+                mAdapter.notifyItemChanged(mFolders.indexOf(folder));
+            }
+
+            @Override
+            protected void onPostExecute(Boolean result) {
+                super.onPostExecute(result);
+                //checking(folder, false);
+
+                if (result==true) {
+                    AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+                    alert.setTitle("Warning")
+                            .setMessage("Proofs are saved into " + zipFilePath)
+                            .setPositiveButton(getResources().getString(android.R.string.yes), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                }
+                            })
+                            .show();
+                } else {
+                    AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+                    alert.setTitle("Warning")
+                            .setMessage("Procedure aborted")
+                            .show();
+                }
+
+            }
             @Override
             protected void onProgressUpdate(Integer... values) {
                 super.onProgressUpdate(values);
                 folder.countFiles = values[0];
                 mAdapter.notifyItemChanged(mFolders.indexOf(folder));
-
             }
-        }.execute();
+        };
+
+        asyncTask.execute();
     }
 }
