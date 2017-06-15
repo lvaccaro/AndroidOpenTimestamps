@@ -46,15 +46,46 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
             tvTitle.setText("");
             tvSubtitle.setText("");
 
+            // click on switch
+            swEnabled.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    if (mItemClickListener == null) {
+                        return;
+                    }
+                    int position = getAdapterPosition();
+                    if (isChecked){
+                        mItemClickListener.onEnableClick(itemView, position, mDataset.get(position).id);
+                    } else {
+                        mItemClickListener.onDisableClick(itemView, position, mDataset.get(position).id);
+                    }
+                }
+            });
+            // click on status imageview
+            ivStatus.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mItemClickListener == null) {
+                        return;
+                    }
+                    int position = getAdapterPosition();
+                    mItemClickListener.onCheckingClick(itemView, position, mDataset.get(position).id);
+                }
+            });
+            // click on text
+            View.OnClickListener textOnClickListener = new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mItemClickListener == null) {
+                        return;
+                    }
+                    int position = getAdapterPosition();
+                    mItemClickListener.onDetailClick(itemView, position, mDataset.get(position).id);
+                }
+            };
+            tvTitle.setOnClickListener(textOnClickListener);
+            tvSubtitle.setOnClickListener(textOnClickListener);
         }
-        /*@Override
-        public void onClick(View v) {
-            System.out.println("onClick");
-            String key = mTvKey.getText().toString();
-            if(mItemClickListener != null) {
-                mItemClickListener.onItemClick(v, getAdapterPosition(), key); //OnItemClickListener mItemClickListener;
-            }
-        }*/
     }
     // Provide a suitable constructor (depends on the kind of dataset)
     public FolderAdapter(Context context, List<Folder> myDataset) {
@@ -87,11 +118,11 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
             holder.swEnabled.setChecked(folder.enabled);
 
             if (folder.state == Folder.State.STAMPING) {
-                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" new files found");
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" changed files found");
             }else if (folder.lastSync == 0){
                 holder.tvSubtitle.setText("Never timestamped");
             } else {
-                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" files at "+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" changed files at "+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
             }
 
             Drawable drawable = null;
@@ -107,41 +138,7 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
                 drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_updating).mutate();
             }
             holder.ivStatus.setImageDrawable(drawable);
-            holder.ivStatus.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (mItemClickListener == null) {
-                        return;
-                    }
-                    mItemClickListener.onCheckingClick(holder.itemView, position, mDataset.get(position).id);
-                }
-            });
 
-            holder.swEnabled.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    if (mItemClickListener == null) {
-                        return;
-                    }
-                    if (isChecked){
-                        mItemClickListener.onEnableClick(holder.itemView, position, mDataset.get(position).id);
-                    } else {
-                        mItemClickListener.onDisableClick(holder.itemView, position, mDataset.get(position).id);
-                    }
-                }
-            });
-
-            View.OnClickListener textOnClickListener = new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (mItemClickListener == null) {
-                        return;
-                    }
-                    mItemClickListener.onDetailClick(holder.itemView, position, mDataset.get(position).id);
-                }
-            };
-            holder.tvTitle.setOnClickListener(textOnClickListener);
-            holder.tvSubtitle.setOnClickListener(textOnClickListener);
         }
 
     }
