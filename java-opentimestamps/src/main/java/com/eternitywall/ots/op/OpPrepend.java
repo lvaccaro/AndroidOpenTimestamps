@@ -17,7 +17,7 @@ public class OpPrepend extends OpBinary {
     private static Logger log = Logger.getLogger(OpPrepend.class.getName());
 
 
-    byte[] arg;
+    public byte[] arg;
 
     public static byte _TAG = (byte) 0xf1;
 
@@ -55,7 +55,7 @@ public class OpPrepend extends OpBinary {
         if(!(obj instanceof OpAppend)){
             return false;
         }
-        return Arrays.equals(this.arg,((OpAppend)obj).arg);
+        return Arrays.equals(this.arg,((OpPrepend)obj).arg);
     }
 
     @Override
