@@ -341,17 +341,16 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
     private void stamp(final Folder folder){
 
-        new AsyncTask<Void,Void,Boolean>() {
+        new AsyncTask<Void,Integer,Boolean>() {
 
             @Override
             protected Boolean doInBackground(Void... params) {
                 List<File> files = folder.getNestedNotSynchedFiles(storage);
-                folder.countFiles = files.size();
                 List<DetachedTimestampFile> fileTimestamps = new ArrayList<>();
                 Log.d("LIST", files.toString());
 
                 // Build hash digest list
-                List<Hash> hashes = new ArrayList<>();
+                /*List<Hash> hashes = new ArrayList<>();
                 for (File file : files) {
                     try {
                         Log.d("STAMP", "FILE: "+file.getName());
@@ -370,6 +369,21 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                 fileTimestamps = new ArrayList<>();
                 for (Hash hash : hashes) {
                     fileTimestamps.add(DetachedTimestampFile.from(new OpSHA256(), hash));
+                }
+                */
+                int countFiles = 0;
+                for (File file : files) {
+                    Log.d("STAMP", "FILE: "+file.getName());
+                    try {
+                        Hash sha256 = new Hash(IOUtil.readFileSHA256(file));
+                        fileTimestamps.add(DetachedTimestampFile.from(new OpSHA256(), sha256));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (NoSuchAlgorithmException e) {
+                        e.printStackTrace();
+                    }
+                    countFiles++;
+                    publishProgress(countFiles);
                 }
 
                 // Stamp the markled list
@@ -406,13 +420,19 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
                 if (aBoolean==false)
                     return;
-
                 folder.state = Folder.State.STAMPED;
                 folder.lastSync = System.currentTimeMillis();
                 dbHelper.update(folder);
                 mAdapter.notifyDataSetChanged();
             }
 
+            @Override
+            protected void onProgressUpdate(Integer... values) {
+                super.onProgressUpdate(values);
+                folder.countFiles = values[0];
+                mAdapter.notifyItemChanged(mFolders.indexOf(folder));
+
+            }
         }.execute();
     }
 }

@@ -86,7 +86,9 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
             holder.tvTitle.setText(folder.name);
             holder.swEnabled.setChecked(folder.enabled);
 
-            if (folder.lastSync == 0){
+            if (folder.state == Folder.State.STAMPING) {
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" new files found");
+            }else if (folder.lastSync == 0){
                 holder.tvSubtitle.setText("Never timestamped");
             } else {
                 holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" files at "+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));

@@ -90,6 +90,12 @@ public class FileActivity extends AppCompatActivity {
                 onInfoClick();
             }
         });
+        findViewById(R.id.btnDownload).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onDownloadClick();
+            }
+        });
 
         // Check DB
         timestampDBHelper = new TimestampDBHelper(this);
@@ -199,8 +205,8 @@ public class FileActivity extends AppCompatActivity {
                 } else {
                     try{
                         //Thu May 28 2015 17:41:18 GMT+0200 (CEST)
-                        DateFormat sdf = new SimpleDateFormat("DDD MMM dd yyyy hh:mm:ss Z T");
-                        Date netDate = (new Date(date));
+                        DateFormat sdf = new SimpleDateFormat("EE MMM dd yyyy hh:mm:ss z");
+                        Date netDate = new Date(date*1000);
                         mDataset.put("Attestation", "Bitcoin attests data existed as of "+sdf.format(netDate));
                     }
                     catch(Exception ex){
@@ -221,6 +227,14 @@ public class FileActivity extends AppCompatActivity {
         StreamSerializationContext ctx = new StreamSerializationContext();
         detachedTimestampFile.serialize(ctx);
         return ctx.getOutput();
+    }
+
+    public void onDownloadClick() {
+        Intent shareIntent = new Intent();
+        shareIntent.setAction(Intent.ACTION_SEND);
+        shareIntent.putExtra(Intent.EXTRA_STREAM, ots);
+        shareIntent.setType("text/plain");
+        startActivity(Intent.createChooser(shareIntent, "Share proof to.."));
     }
 
     public void onInfoClick() {
