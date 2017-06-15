@@ -103,6 +103,8 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
                 drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_timestamped).mutate();
             } else if (folder.state == Folder.State.STAMPING) {
                 drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_timestamping).mutate();
+            } else if (folder.state == Folder.State.CHECKING) {
+                drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_updating).mutate();
             }
             holder.ivStatus.setImageDrawable(drawable);
             holder.ivStatus.setOnClickListener(new View.OnClickListener() {
