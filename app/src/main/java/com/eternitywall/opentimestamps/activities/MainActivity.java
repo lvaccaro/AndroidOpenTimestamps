@@ -155,6 +155,10 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         dbHelper.clearAll();
         timestampDBHelper.clearAll();
 
+        mFolders = new ArrayList<>();
+        mAdapter = new FolderAdapter(this, mFolders);
+        mAdapter.setOnItemClickListener(this);
+
         initDB();
         mAdapter.notifyDataSetChanged();
 
