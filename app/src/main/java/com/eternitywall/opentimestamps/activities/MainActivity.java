@@ -453,8 +453,11 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                 String info = OpenTimestamps.info(folder.ots);
                 Log.d("STAMP", "INFO: "+info);
                 // Save the ots
+                int countFiles = 0;
                 for (DetachedTimestampFile file : fileTimestamps) {
                     timestampDBHelper.addTimestamp(file.getTimestamp());
+                    countFiles++;
+                    publishProgress(countFiles);
                 }
                 return true;
             }
@@ -475,6 +478,13 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                 folder.state = Folder.State.STAMPED;
                 folder.lastSync = System.currentTimeMillis();
                 dbHelper.update(folder);
+                mAdapter.notifyItemChanged(mFolders.indexOf(folder));
+            }
+
+            @Override
+            protected void onProgressUpdate(Integer... values) {
+                super.onProgressUpdate(values);
+                folder.countFiles = values[0];
                 mAdapter.notifyItemChanged(mFolders.indexOf(folder));
             }
         }.execute();

@@ -115,6 +115,8 @@ public class FileActivity extends AppCompatActivity {
                     String filePath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
                     refresh(filePath);*/
                     refresh(uri);
+                } else {
+                    refresh(uri);
                 }
             }
         }
