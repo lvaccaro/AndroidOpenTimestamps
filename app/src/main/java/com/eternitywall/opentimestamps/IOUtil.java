@@ -41,6 +41,27 @@ public class IOUtil {
         }
     }
 
+    public static byte[] readFileSHA256(File file) throws IOException, NoSuchAlgorithmException {
+        // Open file
+        RandomAccessFile f = new RandomAccessFile(file, "r");
+        int maxBuffer=1024*1024;
+        byte[] buffer = new byte[maxBuffer];
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            // Get and check length
+
+            int count = 0;
+            count = f.read(buffer,0,maxBuffer);
+            while(count >=0 ){
+                md.update(buffer,0,count);
+                count = f.read(buffer,0,maxBuffer);
+            }
+            return md.digest();
+        } finally {
+            f.close();
+        }
+    }
+
     public static String getDate(long milliSeconds, String dateFormat)
     {
         // Create a DateFormatter object for displaying date in specified format.

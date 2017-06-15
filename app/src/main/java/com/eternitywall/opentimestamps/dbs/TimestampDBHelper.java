@@ -70,10 +70,11 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
 
         Set<Op> keys = timestamp.ops.keySet();
         for (Op op : keys) {
-            if(keys.size()>1){
-                Log.d("","i>0");
+            if(!timestamp.ops.containsKey(op)) {
+                Log.d("", "");
             }
-            timestamp.put(op, getTimestamp(timestamp.ops.get(op).msg));
+            Timestamp stamp =  getTimestamp(timestamp.ops.get(op).msg);
+            timestamp.ops.put(op, stamp);
         }
         /*
         Set<Map.Entry<Op, Timestamp>> entries = timestamp.ops.entrySet();
