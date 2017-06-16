@@ -1,5 +1,7 @@
 package com.eternitywall.opentimestamps.models;
 
+import android.content.Context;
+
 import com.sromku.simple.storage.Storage;
 
 import java.io.File;
@@ -22,7 +24,7 @@ public class Folder {
     public byte[] hash;
 
     public static enum State  {
-        NOTHING, CHECKING, STAMPED, STAMPING, NOTUPDATED
+        NOTHING, CHECKING, STAMPED, STAMPING, NOTUPDATED, EXPORTING
     };
 
     public List<File> getNestedFiles(Storage storage){
@@ -40,6 +42,10 @@ public class Folder {
             }
         }
         return notSynchedFiles;
+    }
+
+    public String zipPath(Context context){
+        return  context.getExternalCacheDir()+"/"+this.name.replace(" ","_")+".zip";
     }
 
 /*

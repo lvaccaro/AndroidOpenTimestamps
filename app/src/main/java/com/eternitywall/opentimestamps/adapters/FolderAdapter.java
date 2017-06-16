@@ -118,13 +118,19 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
             holder.swEnabled.setChecked(folder.enabled);
 
             if (folder.state == Folder.State.CHECKING){
-                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" changed files found");
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" new changed files found");
             } else if (folder.state == Folder.State.STAMPING) {
-                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" storing files");
-            } else if (folder.lastSync == 0){
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" storing proof files");
+            } else if (folder.state == Folder.State.EXPORTING) {
+                String filepath = folder.zipPath(holder.itemView.getContext());
+                String filename = filepath.substring( filepath.lastIndexOf("/") );
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" exporting proof files at\n" + filename);
+            } else if (folder.state == Folder.State.NOTHING){
                 holder.tvSubtitle.setText("Never timestamped");
-            } else {
-                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" changed files at "+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
+            } else if (folder.state == Folder.State.STAMPED){
+                holder.tvSubtitle.setText("Last timestamp at\n"+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
+            } else if (folder.state == Folder.State.NOTUPDATED){
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" new changed files since\n"+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
             }
 
             Drawable drawable = null;
@@ -138,6 +144,8 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
                 drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_timestamping).mutate();
             } else if (folder.state == Folder.State.CHECKING) {
                 drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_updating).mutate();
+            } else if (folder.state == Folder.State.EXPORTING) {
+                drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_exporting).mutate();
             }
             holder.ivStatus.setImageDrawable(drawable);
 

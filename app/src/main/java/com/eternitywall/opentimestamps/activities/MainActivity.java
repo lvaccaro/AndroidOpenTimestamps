@@ -295,6 +295,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         Intent i = new Intent(Intent.ACTION_VIEW);
         i.setData(Uri.parse(url));
         startActivity(i);*/
+        onCheckingClick(view,position,id);
     }
 
     @Override
@@ -302,7 +303,9 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         Folder folder = mFolders.get(position);
         if (folder.enabled == false)
             return;
-        if (folder.state == Folder.State.STAMPING || folder.state == Folder.State.CHECKING  )
+        if (folder.state == Folder.State.STAMPING ||
+                folder.state == Folder.State.CHECKING ||
+                folder.state == Folder.State.EXPORTING )
             return;
         hashing(folder);
     }
@@ -501,7 +504,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
     private void exporting(){
         for (Folder folder : mFolders){
             if (folder.enabled == true){
-                exporting(folder, getExternalCacheDir()+"/"+folder.name+".zip");
+                exporting(folder, folder.zipPath(this));
 
             }
         }
@@ -580,7 +583,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
-                folder.state = Folder.State.CHECKING;
+                folder.state = Folder.State.EXPORTING;
                 folder.countFiles = 0;
                 mAdapter.notifyItemChanged(mFolders.indexOf(folder));
             }
@@ -588,29 +591,14 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
             @Override
             protected void onPostExecute(Boolean result) {
                 super.onPostExecute(result);
-
-                if (result==true) {
-                    AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
-                    alert.setTitle("Warning")
-                            .setMessage("Proofs are saved into " + zipFilePath)
-                            .setPositiveButton(getResources().getString(android.R.string.yes), new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                }
-                            })
-                            .show();
-                } else {
-                    AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
-                    alert.setTitle("Warning")
-                            .setMessage("Procedure aborted")
-                            .show();
-                }
+                mAdapter.notifyItemChanged(mFolders.indexOf(folder));
 
             }
             @Override
             protected void onProgressUpdate(Integer... values) {
                 super.onProgressUpdate(values);
                 folder.countFiles = values[0];
+                folder.state = Folder.State.EXPORTING;
                 mAdapter.notifyItemChanged(mFolders.indexOf(folder));
             }
         };
