@@ -196,6 +196,14 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
             folder.getNestedFiles(storage);
             mFolders.add(folder);
         }
+        {
+            Folder folder = new Folder();
+            folder.name = "Downloads";
+            folder.roodDir = Environment.DIRECTORY_DOWNLOADS;
+            folder.id = dbHelper.create(folder);
+            folder.getNestedFiles(storage);
+            mFolders.add(folder);
+        }
 
     }
 
