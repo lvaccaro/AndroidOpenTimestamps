@@ -12,8 +12,10 @@ import com.eternitywall.opentimestamps.models.SerializedTimestamp;
 import com.eternitywall.ots.StreamDeserializationContext;
 import com.eternitywall.ots.StreamSerializationContext;
 import com.eternitywall.ots.Timestamp;
+import com.eternitywall.ots.Utils;
 import com.eternitywall.ots.attestation.TimeAttestation;
 import com.eternitywall.ots.op.Op;
+import com.eternitywall.ots.op.OpPrepend;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,10 +33,14 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
 
     private Timestamp popTimestamp(byte[] msg){
         // Get a timestamp, non-recursively
-        SerializedTimestamp serializedTimestamp = super.get(msg);
-        if (serializedTimestamp == null ){
+        SerializedTimestamp serializedTimestamp = null;
+        try {
+            serializedTimestamp = getByHashcode( Arrays.hashCode(msg) );
+        } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
+
         StreamDeserializationContext ctx = new StreamDeserializationContext(serializedTimestamp.serialized);
 
         Timestamp timestamp = new Timestamp(msg);
@@ -56,8 +62,12 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
         }
         for (int i = 0; i < count; i++){
             Op op = Op.deserialize(ctx);
+            if (op instanceof OpPrepend && Arrays.equals( ((OpPrepend)op).arg , Utils.hexToBytes("5942fd9a") )) {
+                Log.d("","===");
+            }
             timestamp.add(op);
         }
+        Log.d("","");
         return timestamp;
     }
 
@@ -70,11 +80,18 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
 
         Set<Op> keys = timestamp.ops.keySet();
         for (Op op : keys) {
-            if(!timestamp.ops.containsKey(op)) {
-                Log.d("", "");
+            if (op instanceof OpPrepend && Arrays.equals( ((OpPrepend)op).arg , Utils.hexToBytes("5942fd9a") )) {
+                Log.d("","===");
             }
-            Timestamp stamp =  getTimestamp(timestamp.ops.get(op).msg);
-            timestamp.ops.put(op, stamp);
+
+            if(timestamp.ops.containsKey(op)) {
+                Log.d("", "");
+                Timestamp stamp = getTimestamp(timestamp.ops.get(op).msg);
+                timestamp.ops.put(op, stamp);
+            } else {
+                Timestamp stamp = getTimestamp(timestamp.ops.get(op).msg);
+                timestamp.ops.put(op, stamp);
+            }
         }
         /*
         Set<Map.Entry<Op, Timestamp>> entries = timestamp.ops.entrySet();
@@ -105,17 +122,20 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
             op.serialize(ctx);
         }
 
-        SerializedTimestamp serializedTimestamp = get(new_timestamp.msg);
-        if (serializedTimestamp == null){
+        try {
+            SerializedTimestamp serializedTimestamp = getByHashcode( Arrays.hashCode(new_timestamp.msg) );
+            // check if just exist -> update
+            if (!Arrays.equals(serializedTimestamp.serialized, ctx.getOutput())) {
+                serializedTimestamp.serialized = ctx.getOutput();
+                update(serializedTimestamp);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
             // check if not exist -> create
-            serializedTimestamp = new SerializedTimestamp();
+            SerializedTimestamp serializedTimestamp = new SerializedTimestamp();
             serializedTimestamp.msg = new_timestamp.msg;
             serializedTimestamp.serialized = ctx.getOutput();
             serializedTimestamp.id = create(serializedTimestamp);
-        } else {
-            // check if just exist -> update
-            serializedTimestamp.serialized = ctx.getOutput();
-            update(serializedTimestamp);
         }
     }
 

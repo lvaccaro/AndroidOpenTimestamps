@@ -4,6 +4,8 @@ package com.eternitywall.opentimestamps;
  * Created by luca on 13/05/2017.
  */
 
+import android.webkit.MimeTypeMap;
+
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -87,4 +89,13 @@ public class IOUtil {
             array[i] = value;
         }
     }
+    public static String getMimeType(String url) {
+        String type = null;
+        String extension = MimeTypeMap.getFileExtensionFromUrl(url);
+        if (extension != null) {
+            type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+        }
+        return type;
+    }
+
 }

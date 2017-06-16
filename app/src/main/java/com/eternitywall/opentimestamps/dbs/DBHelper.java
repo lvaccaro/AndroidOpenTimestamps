@@ -12,15 +12,12 @@ import com.eternitywall.ots.Utils;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by luca on 09/06/2017.
- */
 
 public class DBHelper extends SQLiteOpenHelper {
 
     // Database
     protected static final String DATABASE_NAME = "opentimestamps.db";
-    protected static final int DATABASE_VERSION = 1;
+    protected static final int DATABASE_VERSION = 2;
 
     // Table Names
     protected static final String TABLE_FOLDERS = "folders";
@@ -39,6 +36,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     protected static final String KEY_MSG = "msg";
     protected static final String KEY_SERIALIZE = "serialize";
+    protected static final String KEY_HASHCODE = "hashcode";
 
 
     // table create statement
@@ -56,6 +54,7 @@ public class DBHelper extends SQLiteOpenHelper {
     protected static final String SQL_CREATE_TIMESTAMPS = "CREATE TABLE " + TABLE_TIMESTAMPS + " (" +
             " " + KEY_ID + " INTEGER PRIMARY KEY," +
             " " + KEY_MSG + " BLOB, " +
+            " " + KEY_HASHCODE + " INTEGER UNIQUE, " +
             " " + KEY_SERIALIZE + " BLOB )";
 
     // table delete statement
