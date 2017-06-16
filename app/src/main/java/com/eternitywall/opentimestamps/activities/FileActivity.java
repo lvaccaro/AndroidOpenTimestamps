@@ -49,6 +49,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static com.eternitywall.opentimestamps.IOUtil.getMimeType;
+
 public class FileActivity extends AppCompatActivity {
 
     private RecyclerView mRecyclerView;
@@ -155,10 +157,11 @@ public class FileActivity extends AppCompatActivity {
 
                     // check hash into DB
                     timestamp = timestampDBHelper.getTimestamp(hash);
-                    if(timestamp != null){
-                        Log.d("FILE", timestamp.strTree(0));
-                        ots = getOts();
+                    if(timestamp == null){
+                        return false;
                     }
+                    Log.d("FILE", Timestamp.strTreeExtended(timestamp,0));
+                    ots = getOts(timestamp);
 
                     // verify OTS
                     date = OpenTimestamps.verify(ots,hash);
@@ -178,6 +181,9 @@ public class FileActivity extends AppCompatActivity {
                 } catch (NoSuchAlgorithmException e) {
                     e.printStackTrace();
                     return false;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
                 }
                 return true;
             }
@@ -195,24 +201,24 @@ public class FileActivity extends AppCompatActivity {
 
                 mDataset.put("Name",uri.getLastPathSegment());
                 mDataset.put("Uri",uri.toString());
-                mDataset.put("Type",contentResolver.getType(uri).toString());
+                mDataset.put("Type",getMimeType(uri.toString()));
                 mDataset.put("HASH", IOUtil.bytesToHex(hash));
                 if(timestamp == null){
                     mDataset.put("OTS PROOF", "File not timestamped");
                 } else {
                     mDataset.put("OTS PROOF", IOUtil.bytesToHex(ots));
-                }
-                if(date == null || date == 0){
-                    mDataset.put("Attestation", "Pending or Bad attestation");
-                } else {
-                    try{
-                        //Thu May 28 2015 17:41:18 GMT+0200 (CEST)
-                        DateFormat sdf = new SimpleDateFormat("EE MMM dd yyyy hh:mm:ss z");
-                        Date netDate = new Date(date*1000);
-                        mDataset.put("Attestation", "Bitcoin attests data existed as of "+sdf.format(netDate));
-                    }
-                    catch(Exception ex){
-                        mDataset.put("Attestation", "Invalid date");
+
+                    if (date == null || date == 0) {
+                        mDataset.put("Attestation", "Pending or Bad attestation");
+                    } else {
+                        try {
+                            //Thu May 28 2015 17:41:18 GMT+0200 (CEST)
+                            DateFormat sdf = new SimpleDateFormat("EE MMM dd yyyy hh:mm:ss z");
+                            Date netDate = new Date(date * 1000);
+                            mDataset.put("Attestation", "Bitcoin attests data existed as of " + sdf.format(netDate));
+                        } catch (Exception ex) {
+                            mDataset.put("Attestation", "Invalid date");
+                        }
                     }
                 }
                 mAdapter.notifyDataSetChanged();
@@ -221,7 +227,7 @@ public class FileActivity extends AppCompatActivity {
     }
 
 
-    public byte[] getOts(){
+    public byte[] getOts(Timestamp timestamp){
         if(timestamp == null){
             return null;
         }
