@@ -199,25 +199,25 @@ public class FileActivity extends AppCompatActivity {
             protected void onPostExecute(Boolean success) {
                 super.onPostExecute(success);
 
-                mDataset.put("Name",uri.getLastPathSegment());
-                mDataset.put("Uri",uri.toString());
-                mDataset.put("Type",getMimeType(uri.toString()));
-                mDataset.put("HASH", IOUtil.bytesToHex(hash));
+                mDataset.put(getString(R.string.name),uri.getLastPathSegment());
+                mDataset.put(getString(R.string.uri),uri.toString());
+                mDataset.put(getString(R.string.type),getMimeType(uri.toString()));
+                mDataset.put(getString(R.string.hash), IOUtil.bytesToHex(hash));
                 if(timestamp == null){
-                    mDataset.put("OTS PROOF", "File not timestamped");
+                    mDataset.put(getString(R.string.ots_proof), getString(R.string.file_not_timestamped));
                 } else {
-                    mDataset.put("OTS PROOF", IOUtil.bytesToHex(ots));
+                    mDataset.put(getString(R.string.ots_proof), IOUtil.bytesToHex(ots));
 
                     if (date == null || date == 0) {
-                        mDataset.put("Attestation", "Pending or Bad attestation");
+                        mDataset.put(getString(R.string.attestation), getString(R.string.pending_or_bad_attestation));
                     } else {
                         try {
                             //Thu May 28 2015 17:41:18 GMT+0200 (CEST)
-                            DateFormat sdf = new SimpleDateFormat("EE MMM dd yyyy hh:mm:ss z");
+                            DateFormat sdf = new SimpleDateFormat(getString(R.string.date_format));
                             Date netDate = new Date(date * 1000);
-                            mDataset.put("Attestation", "Bitcoin attests data existed as of " + sdf.format(netDate));
+                            mDataset.put(getString(R.string.attestation), getString(R.string.bitcoin_attests) + sdf.format(netDate));
                         } catch (Exception ex) {
-                            mDataset.put("Attestation", "Invalid date");
+                            mDataset.put(getString(R.string.attestation), getString(R.string.invalid_date));
                         }
                     }
                 }
@@ -242,7 +242,7 @@ public class FileActivity extends AppCompatActivity {
         shareIntent.setAction(Intent.ACTION_SEND);
         shareIntent.putExtra(Intent.EXTRA_STREAM, ots);
         shareIntent.setType("text/plain");
-        startActivity(Intent.createChooser(shareIntent, "Share proof to.."));
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.share_proof_to)));
     }
 
     public void onInfoClick() {

@@ -3,4 +3,23 @@
     <string name="ots_info">OTS INFO</string>
     <string name="show">show</string>
     <string name="download">download</string>
+    <string name="warning">Warning</string>
+    <string name="are_you_sure_to_export_all_your_proof_files">Are you sure to export all your proof files? The procedure requests a lots of time.</string>
+    <string name="are_you_sure_to_reset">Are you sure to reset all timestamp proof?</string>
+    <string name="name">Name</string>
+    <string name="uri">Uri</string>
+    <string name="hash">HASH</string>
+    <string name="type">Type</string>
+    <string name="ots_proof">OTS PROOF</string>
+    <string name="attestation">Attestation</string>
+    <string name="invalid_date">Invalid date</string>
+    <string name="bitcoin_attests">Bitcoin attests data existed as of</string>
+    <string name="pending_or_bad_attestation">Pending or Bad attestation</string>
+    <string name="file_not_timestamped">File not timestamped</string>
+    <string name="share_proof_to">Share proof to..</string>
+    <string name="date_format">EE MMM dd yyyy hh:mm:ss z</string>
+    <string name="new_changed_files_found">new changed files found</string>
+    <string name="exporting_proof_files_at">exporting proof files at</string>
+    <string name="storing_proof_files">storing proof files</string>
+    <string name="new_changed_files_since">new changed files since</string>
 </resources>

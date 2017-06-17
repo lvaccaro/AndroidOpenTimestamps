@@ -252,8 +252,8 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                 checking();
                 return true;
             case R.id.action_clear:
-                alert.setTitle("Warning")
-                        .setMessage("Are you sure to reset all timestamp proof?")
+                alert.setTitle(R.string.warning)
+                        .setMessage(R.string.are_you_sure_to_reset)
                         .setPositiveButton(getResources().getString(android.R.string.yes), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
@@ -271,8 +271,8 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                 return true;
             case R.id.action_export:
 
-                alert.setTitle("Warning")
-                        .setMessage("Are you sure to export all your proof files? The procedure requests a lots of time.")
+                alert.setTitle(R.string.warning)
+                        .setMessage(R.string.are_you_sure_to_export_all_your_proof_files)
                         .setPositiveButton(getResources().getString(android.R.string.yes), new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
