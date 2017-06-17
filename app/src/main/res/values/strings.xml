@@ -22,4 +22,6 @@
     <string name="exporting_proof_files_at">exporting proof files at</string>
     <string name="storing_proof_files">storing proof files</string>
     <string name="new_changed_files_since">new changed files since</string>
+    <string name="never_timestamped">Never timestamped</string>
+    <string name="last_timestamp_at">Last timestamp at</string>
 </resources>

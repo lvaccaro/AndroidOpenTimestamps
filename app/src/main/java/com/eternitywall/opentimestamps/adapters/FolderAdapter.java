@@ -126,9 +126,9 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
                 String filename = filepath.substring( filepath.lastIndexOf("/") );
                 holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+mContext.getString(R.string.exporting_proof_files_at) + filename);
             } else if (folder.state == Folder.State.NOTHING){
-                holder.tvSubtitle.setText("Never timestamped");
+                holder.tvSubtitle.setText(R.string.never_timestamped);
             } else if (folder.state == Folder.State.STAMPED){
-                holder.tvSubtitle.setText("Last timestamp at\n"+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
+                holder.tvSubtitle.setText(mContext.getString(R.string.last_timestamp_at)+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
             } else if (folder.state == Folder.State.NOTUPDATED){
                 holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+mContext.getString(R.string.new_changed_files_since)+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
             } else if (folder.state == Folder.State.EXPORTED){
