@@ -63,7 +63,7 @@ public class FileActivity extends AppCompatActivity {
     ProgressBar mProgressBar;
 
     TimestampDBHelper timestampDBHelper;
-    ContentResolver contentResolver = getContentResolver();
+    ContentResolver mContentResolver;
     Timestamp timestamp;
     byte[] ots;
 
@@ -111,6 +111,9 @@ public class FileActivity extends AppCompatActivity {
         // Check DB
         timestampDBHelper = new TimestampDBHelper(this);
 
+        // Init content
+        mContentResolver = getContentResolver();
+
         // Get intent file
         Intent intent = getIntent();
         if (Intent.ACTION_SEND.equals(intent.getAction())) {
@@ -146,7 +149,7 @@ public class FileActivity extends AppCompatActivity {
 
                 try {
                     // Read file
-                    InputStream inputStream = contentResolver.openInputStream(uri);
+                    InputStream inputStream = mContentResolver.openInputStream(uri);
                     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                     byte[] buffer = new byte[1024];
                     int count = inputStream.read(buffer);
@@ -169,12 +172,12 @@ public class FileActivity extends AppCompatActivity {
                     ots = getOts(timestamp);
 
                     // verify OTS
-                    date = OpenTimestamps.verify(ots,sha256.getValue());
+                    date = OpenTimestamps.verify(ots,sha256);
 
                     // upgrade
                     if (date == null || date == 0){
                         ots = OpenTimestamps.upgrade(ots);
-                        date = OpenTimestamps.verify(ots,sha256.getValue());
+                        date = OpenTimestamps.verify(ots,sha256);
                     }
 
                 } catch (FileNotFoundException e) {
@@ -232,7 +235,7 @@ public class FileActivity extends AppCompatActivity {
                 // Read file
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 try {
-                    InputStream inputStream = contentResolver.openInputStream(uri);
+                    InputStream inputStream = mContentResolver.openInputStream(uri);
                     byte[] buffer = new byte[1024];
                     int count = inputStream.read(buffer);
                     while (count >= 0) {
