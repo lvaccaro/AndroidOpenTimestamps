@@ -47,6 +47,15 @@ public class Folder {
     public String zipPath(Context context){
         return  context.getExternalCacheDir()+"/"+this.name.replace(" ","_")+".zip";
     }
+    public boolean isReady() {
+        if (this.enabled == false)
+            return false;
+        if (this.state == Folder.State.STAMPING ||
+                this.state == Folder.State.CHECKING ||
+                this.state == Folder.State.EXPORTING)
+            return false;
+        return true;
+    }
 
 /*
     public static int stateToInt(State state){

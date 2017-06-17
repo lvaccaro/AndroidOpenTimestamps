@@ -227,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         }
         timestampDBHelper = new TimestampDBHelper(this);
 
-        // Specify and fill the adapter
+        // Specify and fill adapter from db
         mAdapter = new FolderAdapter(this, mFolders);
         mAdapter.setOnItemClickListener(this);
         mRecyclerView.setAdapter(mAdapter);
@@ -249,11 +249,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
         switch (item.getItemId()) {
             case R.id.action_check:
-                for (Folder folder : mFolders){
-                    if(folder.enabled==true) {
-                        checking(folder);
-                    }
-                }
+                checking();
                 return true;
             case R.id.action_clear:
                 alert.setTitle("Warning")
@@ -312,12 +308,6 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
     @Override
     public void onCheckingClick(View view, int position, long id) {
         Folder folder = mFolders.get(position);
-        if (folder.enabled == false)
-            return;
-        if (folder.state == Folder.State.STAMPING ||
-                folder.state == Folder.State.CHECKING ||
-                folder.state == Folder.State.EXPORTING )
-            return;
         hashing(folder);
     }
 
@@ -335,19 +325,18 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         dbHelper.update(mFolders.get(position));
     }
 
-
     // checking files in all folders
     private void checking(){
         for (Folder folder : mFolders){
-            if (folder.enabled == true){
-                checking(folder);
-            }
+            checking(folder);
         }
     }
 
     // checking files in a single folders
     private void checking(final Folder folder){
-
+        if (!folder.isReady()){
+            return;
+        }
         new AsyncTask<Void,Void,Boolean>() {
 
             @Override
@@ -393,6 +382,9 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
     // Generate hashes of all files in a single folder
     private void hashing(final Folder folder) {
+        if (!folder.isReady()){
+            return;
+        }
         final List<DetachedTimestampFile> fileTimestamps = new ArrayList<>();
 
         new AsyncTask<Void,Integer,Boolean>() {
@@ -514,15 +506,15 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
     // Exporting all proof-files of all folders in a more zip file
     private void exporting(){
         for (Folder folder : mFolders){
-            if (folder.enabled == true){
-                exporting(folder, folder.zipPath(this));
-
-            }
+            exporting(folder, folder.zipPath(this));
         }
     }
 
     // Exporting all proof-files of a single folder in a one zip file
     private void exporting(final Folder folder, final String zipFilePath){
+        if (!folder.isReady()){
+            return;
+        }
 
         AsyncTask<Void,Integer,Boolean> asyncTask = new AsyncTask<Void,Integer,Boolean>() {
 
