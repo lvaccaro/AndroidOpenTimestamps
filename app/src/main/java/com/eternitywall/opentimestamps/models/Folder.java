@@ -57,32 +57,5 @@ public class Folder {
         return true;
     }
 
-/*
-    public static int stateToInt(State state){
-        if (state==State.NOTHING)
-            return 0;
-        else if (state==State.CHECKING)
-            return 1;
-        else if (state==State.STAMPED)
-            return 2;
-        else if (state==State.STAMPING)
-            return 3;
-        else if (state==State.NOTUPDATED)
-            return 4;
-        return 0;
-    }
-    public static State intToState(int state){
-        if (state==0)
-            return State.NOTHING;
-        else if (state==1)
-            return State.CHECKING;
-        else if (state==2)
-            return State.STAMPED;
-        else if (state==3)
-            return State.STAMPING;
-        else if (state==4)
-            return State.NOTUPDATED;
-        return State.NOTHING;
-    }*/
 
 }
