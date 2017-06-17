@@ -29,6 +29,25 @@ public class SerializedTimestampDBHelper extends DBHelper {
         super(context);
     }
 
+
+    public long createUpdate(SerializedTimestamp stamp) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(KEY_MSG, stamp.msg);
+        values.put(KEY_SERIALIZE, stamp.serialized);
+        values.put(KEY_HASHCODE, stamp.getHashcode());
+
+        int id = (int) db.insertWithOnConflict(TABLE_TIMESTAMPS, null, values, SQLiteDatabase.CONFLICT_IGNORE);
+        if (id == -1) {
+            return db.update(TABLE_TIMESTAMPS, values, KEY_ID + " = ?",
+                    new String[] { String.valueOf(stamp.id) });
+        } else {
+            stamp.id = id;
+        }
+        return id;
+    }
+
     public long create(SerializedTimestamp stamp) {
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -58,6 +77,7 @@ public class SerializedTimestampDBHelper extends DBHelper {
         stamp.id = c.getInt(c.getColumnIndex(KEY_ID));
         stamp.msg = c.getBlob(c.getColumnIndex(KEY_MSG));
         stamp.serialized = c.getBlob(c.getColumnIndex(KEY_SERIALIZE));
+        c.close();
         return stamp;
     }
 
@@ -78,6 +98,7 @@ public class SerializedTimestampDBHelper extends DBHelper {
             stamp.id = c.getInt(c.getColumnIndex(KEY_ID));
             stamp.msg = c.getBlob(c.getColumnIndex(KEY_MSG));
             stamp.serialized = c.getBlob(c.getColumnIndex(KEY_SERIALIZE));
+            c.close();
             return stamp;
 
         } catch (Exception e){
@@ -111,11 +132,10 @@ public class SerializedTimestampDBHelper extends DBHelper {
                 stamp.id = c.getInt(c.getColumnIndex(KEY_ID));
                 stamp.msg = c.getBlob(c.getColumnIndex(KEY_MSG));
                 stamp.serialized = c.getBlob(c.getColumnIndex(KEY_SERIALIZE));
-                // adding to todo list
                 stamps.add(stamp);
             } while (c.moveToNext());
         }
-
+        c.close();
         return stamps;
     }
 

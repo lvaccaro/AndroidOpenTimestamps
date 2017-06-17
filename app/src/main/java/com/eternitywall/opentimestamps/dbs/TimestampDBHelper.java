@@ -46,9 +46,6 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
         Timestamp timestamp = new Timestamp(msg);
         int count = ctx.readVaruint();
         for (int i = 0; i < count; i++){
-            if (i>0){
-                Log.d("","i>0");
-            }
             TimeAttestation attestation = TimeAttestation.deserialize(ctx);
             if (timestamp.attestations.contains(attestation)){
                 timestamp.attestations.set(timestamp.attestations.indexOf(attestation) , attestation);
@@ -57,17 +54,10 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
             }
         }
         count = ctx.readVaruint();
-        if(count>1){
-            Log.d("","i>0");
-        }
         for (int i = 0; i < count; i++){
             Op op = Op.deserialize(ctx);
-            if (op instanceof OpPrepend && Arrays.equals( ((OpPrepend)op).arg , Utils.hexToBytes("5942fd9a") )) {
-                Log.d("","===");
-            }
             timestamp.add(op);
         }
-        Log.d("","");
         return timestamp;
     }
 
@@ -80,12 +70,7 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
 
         Set<Op> keys = timestamp.ops.keySet();
         for (Op op : keys) {
-            if (op instanceof OpPrepend && Arrays.equals( ((OpPrepend)op).arg , Utils.hexToBytes("5942fd9a") )) {
-                Log.d("","===");
-            }
-
             if(timestamp.ops.containsKey(op)) {
-                Log.d("", "");
                 Timestamp stamp = getTimestamp(timestamp.ops.get(op).msg);
                 timestamp.ops.put(op, stamp);
             } else {
@@ -123,19 +108,13 @@ public class TimestampDBHelper extends SerializedTimestampDBHelper {
         }
 
         try {
-            SerializedTimestamp serializedTimestamp = getByHashcode( Arrays.hashCode(new_timestamp.msg) );
-            // check if just exist -> update
-            if (!Arrays.equals(serializedTimestamp.serialized, ctx.getOutput())) {
-                serializedTimestamp.serialized = ctx.getOutput();
-                update(serializedTimestamp);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            // check if not exist -> create
             SerializedTimestamp serializedTimestamp = new SerializedTimestamp();
             serializedTimestamp.msg = new_timestamp.msg;
             serializedTimestamp.serialized = ctx.getOutput();
-            serializedTimestamp.id = create(serializedTimestamp);
+            createUpdate(serializedTimestamp);
+        }catch (Exception e){
+            e.printStackTrace();
+
         }
     }
 
