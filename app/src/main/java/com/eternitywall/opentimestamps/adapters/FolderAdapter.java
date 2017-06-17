@@ -118,19 +118,19 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
             holder.swEnabled.setChecked(folder.enabled);
 
             if (folder.state == Folder.State.CHECKING){
-                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+mContext.getString(R.string.new_changed_files_found));
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" "+mContext.getString(R.string.new_changed_files_found));
             } else if (folder.state == Folder.State.STAMPING) {
-                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+mContext.getString(R.string.storing_proof_files));
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" "+mContext.getString(R.string.storing_proof_files));
             } else if (folder.state == Folder.State.EXPORTING) {
                 String filepath = folder.zipPath(holder.itemView.getContext());
                 String filename = filepath.substring( filepath.lastIndexOf("/") );
-                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+mContext.getString(R.string.exporting_proof_files_at) + filename);
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" "+mContext.getString(R.string.exporting_proof_files_at) + filename);
             } else if (folder.state == Folder.State.NOTHING){
                 holder.tvSubtitle.setText(R.string.never_timestamped);
             } else if (folder.state == Folder.State.STAMPED){
-                holder.tvSubtitle.setText(mContext.getString(R.string.last_timestamp_at)+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
+                holder.tvSubtitle.setText(mContext.getString(R.string.last_timestamp_at)+" "+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
             } else if (folder.state == Folder.State.NOTUPDATED){
-                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+mContext.getString(R.string.new_changed_files_since)+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
+                holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" "+mContext.getString(R.string.new_changed_files_since)+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
             } else if (folder.state == Folder.State.EXPORTED){
                 holder.tvSubtitle.setText(folder.zipPath(holder.itemView.getContext()));
             }
