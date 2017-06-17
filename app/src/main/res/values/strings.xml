@@ -24,4 +24,5 @@
     <string name="new_changed_files_since">new changed files since</string>
     <string name="never_timestamped">Never timestamped</string>
     <string name="last_timestamp_at">Last timestamp at</string>
+    <string name="file_or_timestamp_error">File or timestamp error :</string>
 </resources>

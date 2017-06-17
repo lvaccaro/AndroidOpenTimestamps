@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DividerItemDecoration;
@@ -15,6 +16,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.eternitywall.opentimestamps.GoogleUrlShortener;
@@ -43,6 +45,7 @@ import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
@@ -57,7 +60,12 @@ public class FileActivity extends AppCompatActivity {
     private ItemAdapter mAdapter;
     private LinkedHashMap<String,String> mDataset;
     private RecyclerView.LayoutManager mLayoutManager;
+    ProgressBar mProgressBar;
+
     TimestampDBHelper timestampDBHelper;
+    ContentResolver contentResolver = getContentResolver();
+    Timestamp timestamp;
+    byte[] ots;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +73,7 @@ public class FileActivity extends AppCompatActivity {
         setContentView(R.layout.activity_file);
 
         mRecyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
+        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
 
         // use this setting to improve performance if you know that changes
         // in content do not change the layout size of the RecyclerView
@@ -116,29 +125,24 @@ public class FileActivity extends AppCompatActivity {
                     cursor.moveToFirst();
                     String filePath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
                     refresh(filePath);*/
-                    refresh(uri);
+                    load(uri);
                 } else {
-                    refresh(uri);
+                    load(uri);
                 }
             }
         }
     }
 
-    Timestamp timestamp;
-    byte[] hash;
-    byte[] ots;
-    Long date;
 
 
-
-    private void refresh (final Uri uri) {
-        final ContentResolver contentResolver = getContentResolver();
+    private void load (final Uri uri) {
 
         new AsyncTask<Void, Void, Boolean>() {
+            Hash sha256;
+            Long date;
 
             @Override
             protected Boolean doInBackground(Void... params) {
-
 
                 try {
                     // Read file
@@ -152,24 +156,25 @@ public class FileActivity extends AppCompatActivity {
                     }
 
                     // Calculate Hash
-                    hash = IOUtil.SHA256(outputStream.toByteArray());
-                    Log.d("FILE", "HASH: "+IOUtil.bytesToHex(hash));
+                    sha256 = new Hash( IOUtil.SHA256(outputStream.toByteArray()) );
+                    Log.d("FILE", "HASH: "+IOUtil.bytesToHex(sha256.getValue()));
 
                     // check hash into DB
-                    timestamp = timestampDBHelper.getTimestamp(hash);
+                    timestamp = timestampDBHelper.getTimestamp(sha256.getValue());
                     if(timestamp == null){
-                        return false;
+                        Log.d("FILE", "File not found");
+                        return true;
                     }
                     Log.d("FILE", Timestamp.strTreeExtended(timestamp,0));
                     ots = getOts(timestamp);
 
                     // verify OTS
-                    date = OpenTimestamps.verify(ots,hash);
+                    date = OpenTimestamps.verify(ots,sha256.getValue());
 
                     // upgrade
                     if (date == null || date == 0){
                         ots = OpenTimestamps.upgrade(ots);
-                        date = OpenTimestamps.verify(ots,hash);
+                        date = OpenTimestamps.verify(ots,sha256.getValue());
                     }
 
                 } catch (FileNotFoundException e) {
@@ -191,39 +196,132 @@ public class FileActivity extends AppCompatActivity {
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
+                mProgressBar.setVisibility(View.VISIBLE);
 
-                mAdapter.notifyDataSetChanged();
             }
 
             @Override
             protected void onPostExecute(Boolean success) {
                 super.onPostExecute(success);
+                mProgressBar.setVisibility(View.GONE);
 
-                mDataset.put(getString(R.string.name),uri.getLastPathSegment());
-                mDataset.put(getString(R.string.uri),uri.toString());
-                mDataset.put(getString(R.string.type),getMimeType(uri.toString()));
-                mDataset.put(getString(R.string.hash), IOUtil.bytesToHex(hash));
-                if(timestamp == null){
-                    mDataset.put(getString(R.string.ots_proof), getString(R.string.file_not_timestamped));
+                if(success==false){
+                    // generic error
+                    AlertDialog alert = new AlertDialog.Builder(FileActivity.this)
+                            .setTitle(getString(R.string.warning))
+                            .setMessage(getString(R.string.file_or_timestamp_error)+uri.getPath().toString())
+                            .show();
+                } else if(timestamp == null){
+                    // not timestamped -> stamp
+                    stamp(uri);
                 } else {
-                    mDataset.put(getString(R.string.ots_proof), IOUtil.bytesToHex(ots));
-
-                    if (date == null || date == 0) {
-                        mDataset.put(getString(R.string.attestation), getString(R.string.pending_or_bad_attestation));
-                    } else {
-                        try {
-                            //Thu May 28 2015 17:41:18 GMT+0200 (CEST)
-                            DateFormat sdf = new SimpleDateFormat(getString(R.string.date_format));
-                            Date netDate = new Date(date * 1000);
-                            mDataset.put(getString(R.string.attestation), getString(R.string.bitcoin_attests) + sdf.format(netDate));
-                        } catch (Exception ex) {
-                            mDataset.put(getString(R.string.attestation), getString(R.string.invalid_date));
-                        }
-                    }
+                    refresh(uri,sha256,timestamp,date);
                 }
-                mAdapter.notifyDataSetChanged();
             }
         }.execute();
+    }
+
+    private void stamp (final Uri uri) {
+
+        new AsyncTask<Void, Void, Boolean>() {
+            Hash sha256;
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+
+                // Read file
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                try {
+                    InputStream inputStream = contentResolver.openInputStream(uri);
+                    byte[] buffer = new byte[1024];
+                    int count = inputStream.read(buffer);
+                    while (count >= 0) {
+                        outputStream.write(buffer, 0, count);
+                        count = inputStream.read(buffer);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+
+                // Calculate Hash
+                final List<DetachedTimestampFile> fileTimestamps = new ArrayList<>();
+                try {
+                    sha256 = new Hash(IOUtil.SHA256(outputStream.toByteArray()));
+                    Log.d("FILE", "HASH: " + IOUtil.bytesToHex(sha256.getValue()));
+                    fileTimestamps.add(DetachedTimestampFile.from(new OpSHA256(), sha256));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                // Stamp the markled list
+                try {
+                    Timestamp merkleTip = OpenTimestamps.makeMerkleTree(fileTimestamps);
+                    byte[] hash = merkleTip.getDigest();
+                    Log.d("STAMP", "MERKLE: " + IOUtil.bytesToHex(hash));
+                    //private static Timestamp create(Timestamp timestamp, List<String> calendarUrls, Integer m, HashMap<String,String> privateCalendarUrls) {
+                    byte[] ots = OpenTimestamps.stamp(merkleTip, null, 0, null);
+                    Log.d("STAMP", "OTS: " + IOUtil.bytesToHex(ots));
+                    // Stamp proof info
+                    String info = OpenTimestamps.info(ots);
+                    Log.d("STAMP", "INFO: " + info);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+
+                // Store the timestamp
+                try {
+                    for (DetachedTimestampFile file : fileTimestamps) {
+                        timestampDBHelper.addTimestamp(file.getTimestamp());
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                mProgressBar.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            protected void onPostExecute(Boolean success) {
+                super.onPostExecute(success);
+                mProgressBar.setVisibility(View.GONE);
+                load(uri);
+
+            }
+        }.execute();
+    }
+
+    public void refresh(Uri uri, Hash hash, Timestamp timestamp, Long date){
+        mDataset.put(getString(R.string.name),uri.getLastPathSegment());
+        mDataset.put(getString(R.string.uri),uri.toString());
+        mDataset.put(getString(R.string.type),getMimeType(uri.toString()));
+        mDataset.put(getString(R.string.hash), IOUtil.bytesToHex(hash.getValue()));
+        if(timestamp == null){
+            mDataset.put(getString(R.string.ots_proof), getString(R.string.file_not_timestamped));
+        } else {
+            mDataset.put(getString(R.string.ots_proof), IOUtil.bytesToHex(ots));
+
+            if (date == null || date == 0) {
+                mDataset.put(getString(R.string.attestation), getString(R.string.pending_or_bad_attestation));
+            } else {
+                try {
+                    //Thu May 28 2015 17:41:18 GMT+0200 (CEST)
+                    DateFormat sdf = new SimpleDateFormat(getString(R.string.date_format));
+                    Date netDate = new Date(date * 1000);
+                    mDataset.put(getString(R.string.attestation), getString(R.string.bitcoin_attests) + sdf.format(netDate));
+                } catch (Exception ex) {
+                    mDataset.put(getString(R.string.attestation), getString(R.string.invalid_date));
+                }
+            }
+        }
+        mAdapter.notifyDataSetChanged();
     }
 
 
