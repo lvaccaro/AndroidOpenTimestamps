@@ -131,6 +131,8 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
                 holder.tvSubtitle.setText("Last timestamp at\n"+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
             } else if (folder.state == Folder.State.NOTUPDATED){
                 holder.tvSubtitle.setText(String.valueOf(folder.countFiles)+" new changed files since\n"+IOUtil.getDate(folder.lastSync,"dd/MM/yyyy hh:mm"));
+            } else if (folder.state == Folder.State.EXPORTED){
+                holder.tvSubtitle.setText(folder.zipPath(holder.itemView.getContext()));
             }
 
             Drawable drawable = null;
@@ -145,6 +147,8 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
             } else if (folder.state == Folder.State.CHECKING) {
                 drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_updating).mutate();
             } else if (folder.state == Folder.State.EXPORTING) {
+                drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_exporting).mutate();
+            } else if (folder.state == Folder.State.EXPORTED) {
                 drawable = ContextCompat.getDrawable(mContext, R.drawable.ic_exporting).mutate();
             }
             holder.ivStatus.setImageDrawable(drawable);

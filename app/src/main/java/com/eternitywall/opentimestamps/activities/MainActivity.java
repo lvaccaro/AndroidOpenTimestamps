@@ -599,6 +599,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
             @Override
             protected void onPostExecute(Boolean result) {
                 super.onPostExecute(result);
+                folder.state = Folder.State.EXPORTED;
                 mAdapter.notifyItemChanged(mFolders.indexOf(folder));
 
             }
@@ -606,7 +607,6 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
             protected void onProgressUpdate(Integer... values) {
                 super.onProgressUpdate(values);
                 folder.countFiles = values[0];
-                folder.state = Folder.State.EXPORTING;
                 mAdapter.notifyItemChanged(mFolders.indexOf(folder));
             }
         };

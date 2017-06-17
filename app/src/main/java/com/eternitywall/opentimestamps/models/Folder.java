@@ -24,7 +24,7 @@ public class Folder {
     public byte[] hash;
 
     public static enum State  {
-        NOTHING, CHECKING, STAMPED, STAMPING, NOTUPDATED, EXPORTING
+        NOTHING, CHECKING, STAMPED, STAMPING, NOTUPDATED, EXPORTING, EXPORTED
     };
 
     public List<File> getNestedFiles(Storage storage){
