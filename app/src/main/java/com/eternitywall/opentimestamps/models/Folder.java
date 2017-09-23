@@ -1,6 +1,7 @@
 package com.eternitywall.opentimestamps.models;
 
 import android.content.Context;
+import android.os.Environment;
 
 import com.sromku.simple.storage.Storage;
 
@@ -45,7 +46,8 @@ public class Folder {
     }
 
     public String zipPath(Context context){
-        return  context.getExternalCacheDir()+"/"+this.name.replace(" ","_")+".zip";
+        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+        return  dir.getAbsolutePath()+"/"+this.name.replace(" ","_")+".zip";
     }
     public boolean isReady() {
         if (this.enabled == false)

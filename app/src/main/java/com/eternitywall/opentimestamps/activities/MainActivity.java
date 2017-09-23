@@ -521,23 +521,23 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
             @Override
             protected Boolean doInBackground(Void... params) {
 
-
+                // check files
                 List<File> files = folder.getNestedFiles(storage);
-                FileOutputStream dest = null;
-                ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(dest));
-                BufferedInputStream origin = null;
+                if (files.size() == 0){
+                    return true;
+                }
+
+                ZipOutputStream out = null;
                 int countFiles = 0;
                 int MAXSIZE= 1024*1024;
                 byte[] buffer = new byte[MAXSIZE];
 
                 try {
-                    dest = new FileOutputStream(zipFilePath);
+                    FileOutputStream dest = new FileOutputStream(zipFilePath);
+                    out = new ZipOutputStream(new BufferedOutputStream(dest));
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     return false;
-                }
-                if (files.size() == 0){
-                    return true;
                 }
 
                 try {
@@ -556,14 +556,13 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                         try {
                             out.putNextEntry(entry);
                             ByteArrayInputStream is = new ByteArrayInputStream(ctx.getOutput());
-                            origin = new BufferedInputStream(is, MAXSIZE);
+                            BufferedInputStream origin = new BufferedInputStream(is, MAXSIZE);
 
                             int count;
                             while ((count = origin.read(buffer, 0, MAXSIZE)) != -1) {
                                 out.write(buffer, 0, count);
                             }
                             origin.close();
-                            out.close();
                         } catch (Exception e){
                             e.printStackTrace();
                         }
@@ -572,13 +571,18 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                         publishProgress(countFiles);
                     }
 
-                } catch (IOException e) {
+                    out.close();
+
+                } catch (Exception e) {
                     e.printStackTrace();
-                    return false;
-                } catch (NoSuchAlgorithmException e) {
-                    e.printStackTrace();
+                    try {
+                        out.close();
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
                     return false;
                 }
+
                 return true;
 
             }
