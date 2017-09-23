@@ -7,7 +7,6 @@
 .DS_Store
 javakeystore.jks
 gradle/
-gradlew
 app/app-release.apk
 /build
 /captures
