@@ -366,7 +366,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
             @Override
             protected Boolean doInBackground(Void... params) {
-                List<File> files = folder.getNestedNotSynchedFiles(storage);
+                List<File> files = folder.getNestedNotSyncedFiles(storage);
                 return files.size() <= 0;
             }
 
@@ -413,7 +413,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
             @Override
             protected Boolean doInBackground(Void... params) {
-                List<File> files = folder.getNestedNotSynchedFiles(storage);
+                List<File> files = folder.getNestedNotSyncedFiles(storage);
                 int countFiles = 0;
                 for (File file : files) {
                     countFiles++;

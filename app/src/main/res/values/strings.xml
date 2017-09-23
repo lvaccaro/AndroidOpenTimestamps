@@ -38,4 +38,8 @@
     <string name="invalid_file_not_found">File not found</string>
     <string name="invalid_file_zip">Invalid zip archive file</string>
     <string name="import_file_success">Import file success</string>
+    <string name="check">Check</string>
+    <string name="export_all_proofs">Export all proofs</string>
+    <string name="import_proofs">Import proofs</string>
+    <string name="reset">Reset</string>
 </resources>

@@ -64,6 +64,8 @@ public class FolderDBHelper extends DBHelper {
         folder.countFiles = c.getLong(c.getColumnIndex(KEY_COUNTFILES));
         folder.ots = c.getBlob(c.getColumnIndex(KEY_OTS));
         folder.hash = c.getBlob(c.getColumnIndex(KEY_HASH));
+
+        c.close();
         return folder;
     }
 
@@ -95,6 +97,7 @@ public class FolderDBHelper extends DBHelper {
             } while (c.moveToNext());
         }
 
+        c.close();
         return folders;
     }
 

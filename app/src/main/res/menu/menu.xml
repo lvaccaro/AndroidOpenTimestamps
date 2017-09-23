@@ -4,18 +4,18 @@
     <item
         android:id="@+id/action_check"
         android:icon="@mipmap/ic_action_cached"
-        android:title="Check"
+        android:title="@string/check"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_export"
         android:icon="@drawable/ic_exporting"
-        android:title="Export all proofs" />
+        android:title="@string/export_all_proofs" />
     <item
         android:id="@+id/action_import"
         android:icon="@drawable/ic_exporting"
-        android:title="Import proofs" />
+        android:title="@string/import_proofs" />
     <item
         android:id="@+id/action_clear"
         android:icon="@android:drawable/ic_menu_recent_history"
-        android:title="Reset" />
+        android:title="@string/reset" />
 </menu>

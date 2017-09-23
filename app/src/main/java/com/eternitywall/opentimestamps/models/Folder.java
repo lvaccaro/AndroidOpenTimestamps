@@ -34,15 +34,15 @@ public class Folder {
         return files;
     }
 
-    public List<File> getNestedNotSynchedFiles(Storage storage) {
-        List<File> notSynchedFiles = new ArrayList<>();
+    public List<File> getNestedNotSyncedFiles(Storage storage) {
+        List<File> notSyncedFiles = new ArrayList<>();
         List<File> files = storage.getNestedFiles(roodDir);
         for (File file : files) {
             if (file.lastModified() > lastSync) {
-                notSynchedFiles.add(file);
+                notSyncedFiles.add(file);
             }
         }
-        return notSynchedFiles;
+        return notSyncedFiles;
     }
 
     public String zipPath(Context context){
