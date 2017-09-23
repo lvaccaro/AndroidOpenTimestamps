@@ -24,6 +24,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.eternitywall.opentimestamps.IOUtil;
 import com.eternitywall.opentimestamps.R;
@@ -33,12 +34,15 @@ import com.eternitywall.opentimestamps.dbs.DBHelper;
 import com.eternitywall.opentimestamps.dbs.FolderDBHelper;
 import com.eternitywall.opentimestamps.dbs.TimestampDBHelper;
 import com.eternitywall.opentimestamps.models.Folder;
+import com.eternitywall.opentimestamps.models.Ots;
 import com.eternitywall.ots.DetachedTimestampFile;
 import com.eternitywall.ots.Hash;
 import com.eternitywall.ots.OpenTimestamps;
+import com.eternitywall.ots.StreamDeserializationContext;
 import com.eternitywall.ots.StreamSerializationContext;
 import com.eternitywall.ots.Timestamp;
 import com.eternitywall.ots.Utils;
+import com.eternitywall.ots.crypto.Digest;
 import com.eternitywall.ots.op.OpSHA256;
 import com.squareup.okhttp.internal.Util;
 import com.sromku.simple.storage.SimpleStorage;
@@ -64,6 +68,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class MainActivity extends AppCompatActivity implements FolderAdapter.OnItemClickListener {
@@ -287,6 +292,24 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                         })
                         .show();
                 return true;
+            case R.id.action_import:
+
+                alert.setTitle(R.string.warning)
+                        .setMessage(R.string.are_you_sure_to_import_all_your_proof_files)
+                        .setPositiveButton(getResources().getString(android.R.string.yes), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                showFileChooser();
+                            }
+                        })
+                        .setNegativeButton(getResources().getString(android.R.string.no), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        })
+                        .show();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -399,8 +422,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                     Log.d("STAMP", "FILE: "+file.getName());
 
                     try {
-                        Hash sha256 = new Hash(IOUtil.readFileSHA256(file));
-                        fileTimestamps.add(DetachedTimestampFile.from(new OpSHA256(), sha256));
+                        fileTimestamps.add(Ots.hashing(file));
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (NoSuchAlgorithmException e) {
@@ -503,6 +525,66 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
 
 
+    // Import : open show file to choose wich import
+    private static final int FILE_SELECT_CODE = 0;
+
+    private void showFileChooser() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        try {
+            startActivityForResult(
+                    Intent.createChooser(intent, getString(R.string.select_a_file_to_import)),
+                    FILE_SELECT_CODE);
+        } catch (android.content.ActivityNotFoundException ex) {
+            try {
+                // Potentially direct the user to the Market with a Dialog
+                intent = new Intent("com.sec.android.app.myfiles.PICK_DATA");
+                intent.putExtra("CONTENT_TYPE", "*/*");
+                intent.addCategory(Intent.CATEGORY_DEFAULT);
+                startActivityForResult(intent, FILE_SELECT_CODE);
+            } catch (Exception ex1) {
+                Toast.makeText(this, R.string.please_install_a_file_manager, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch(requestCode) {
+            case FILE_SELECT_CODE: {
+                if (resultCode == RESULT_OK){
+                    Uri uri = data.getData();
+                    importing( uri.getPath() );
+                }
+            }
+        }
+    }
+
+    private void importing(String filePath) {
+        try {
+            FileInputStream fin = new FileInputStream(filePath);
+            ZipInputStream zin = new ZipInputStream(fin);
+            ZipEntry ze = null;
+            while ((ze = zin.getNextEntry()) != null) {
+                Log.v("Decompress", "Unzipping " + ze.getName());
+                if (ze.isDirectory()) {
+                    ;
+                } else {
+                    byte[] bytes = new byte[(int) ze.getSize()];
+                    zin.read(bytes, 0, bytes.length);
+                    Timestamp stamp = Ots.read(bytes);
+                    timestampDBHelper.addTimestamp(stamp);
+                    zin.closeEntry();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     // Exporting all proof-files of all folders in a more zip file
     private void exporting(){
         for (Folder folder : mFolders){
@@ -529,8 +611,6 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
                 ZipOutputStream out = null;
                 int countFiles = 0;
-                int MAXSIZE= 1024*1024;
-                byte[] buffer = new byte[MAXSIZE];
 
                 try {
                     FileOutputStream dest = new FileOutputStream(zipFilePath);
@@ -544,28 +624,10 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                     for (File file : files) {
 
                         Log.d("STAMP", "FILE: " + file.getName());
-
                         Hash sha256 = new Hash(IOUtil.readFileSHA256(file));
                         Timestamp stamp = timestampDBHelper.getTimestamp(sha256.getValue());
-                        StreamSerializationContext ctx = new StreamSerializationContext();
-                        stamp.serialize(ctx);
-
-
-                        String name = IOUtil.bytesToHex(sha256.getValue()) + ".ots";
-                        ZipEntry entry = new ZipEntry(name);
-                        try {
-                            out.putNextEntry(entry);
-                            ByteArrayInputStream is = new ByteArrayInputStream(ctx.getOutput());
-                            BufferedInputStream origin = new BufferedInputStream(is, MAXSIZE);
-
-                            int count;
-                            while ((count = origin.read(buffer, 0, MAXSIZE)) != -1) {
-                                out.write(buffer, 0, count);
-                            }
-                            origin.close();
-                        } catch (Exception e){
-                            e.printStackTrace();
-                        }
+                        String filename = IOUtil.bytesToHex(sha256.getValue()) + ".ots";
+                        Ots.write(stamp,out,filename);
 
                         countFiles++;
                         publishProgress(countFiles);

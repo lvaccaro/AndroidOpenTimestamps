@@ -25,4 +25,7 @@
     <string name="never_timestamped">Never timestamped</string>
     <string name="last_timestamp_at">Last timestamp at</string>
     <string name="file_or_timestamp_error">File or timestamp error :</string>
+    <string name="please_install_a_file_manager">Please install a File Manager.</string>
+    <string name="select_a_file_to_import">Select a File to Import</string>
+    <string name="are_you_sure_to_import_all_your_proof_files">Are you sure to import all your proof files?</string>
 </resources>
