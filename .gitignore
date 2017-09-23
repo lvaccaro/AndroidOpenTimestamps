@@ -6,7 +6,6 @@
 .idea
 .DS_Store
 javakeystore.jks
-gradle/
 app/app-release.apk
 /build
 /captures
