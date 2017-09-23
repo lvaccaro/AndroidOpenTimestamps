@@ -13,6 +13,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -25,7 +26,14 @@ import java.util.zip.ZipOutputStream;
 
 public class Ots {
 
-    public static DetachedTimestampFile read(byte[] ots) {
+    public static DetachedTimestampFile read(File filepath) throws Exception {
+        FileInputStream fin = new FileInputStream(filepath);
+        byte[] bytes = new byte[(int) fin.available()];
+        fin.read(bytes, 0, bytes.length);
+        fin.close();
+        return read(bytes);
+    }
+    public static DetachedTimestampFile read(byte[] ots) throws Exception {
         StreamDeserializationContext sdc = new StreamDeserializationContext(ots);
         DetachedTimestampFile detached = DetachedTimestampFile.deserialize(sdc);
         return detached;

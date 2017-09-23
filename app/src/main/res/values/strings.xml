@@ -33,4 +33,9 @@
     <string name="file_download_alertdialog">Saving or Sharing OTS file proof</string>
     <string name="file_proof_saving">File proof saved in</string>
     <string name="file_proof_saving_error">Saving file proof error</string>
+    <string name="invalid_file_not_ots">Invalid OTS proof file</string>
+    <string name="invalid_file_not_ots_not_zip">Invalid OTS proof or Zip archive proof file</string>
+    <string name="invalid_file_not_found">File not found</string>
+    <string name="invalid_file_zip">Invalid zip archive file</string>
+    <string name="import_file_success">Import file success</string>
 </resources>

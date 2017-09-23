@@ -565,28 +565,64 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         }
     }
 
-    private void importing(String filePath) {
-        try {
-            FileInputStream fin = new FileInputStream(filePath);
-            ZipInputStream zin = new ZipInputStream(fin);
-            ZipFile zipFile = new ZipFile(filePath);
-            ZipEntry ze = null;
-            while ((ze = zin.getNextEntry()) != null) {
-                Log.v("Decompress", "Unzipping " + ze.getName());
-                if (ze.isDirectory()) {
-                    ;
-                } else {
-                    ZipEntry zipEntry = zipFile.getEntry(ze.getName());
-                    byte[] bytes = new byte[(int) zipEntry.getSize()];
-                    zin.read(bytes, 0, bytes.length);
-                    DetachedTimestampFile detachedTimestampFile = Ots.read(bytes);
+    private void importingZip(String filePath) throws IOException {
+        ZipFile zipFile = new ZipFile(filePath);
+        FileInputStream fin = new FileInputStream(filePath);
+        ZipInputStream zin = new ZipInputStream(fin);
+        ZipEntry ze = null;
+        while ((ze = zin.getNextEntry()) != null) {
+            Log.v("Decompress", "Unzipping " + ze.getName());
+            if (ze.isDirectory()) {
+                ;
+            } else {
+                ZipEntry zipEntry = zipFile.getEntry(ze.getName());
+                byte[] bytes = new byte[(int) zipEntry.getSize()];
+                zin.read(bytes, 0, bytes.length);
+                DetachedTimestampFile detachedTimestampFile = null;
+                try {
+                    detachedTimestampFile = Ots.read(bytes);
                     timestampDBHelper.addTimestamp(detachedTimestampFile.getTimestamp());
-                    zin.closeEntry();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
+                zin.closeEntry();
             }
-            zin.close();
-        } catch (Exception e) {
+        }
+        zin.close();
+    }
+
+    private void importingOts(String filePath) throws Exception {
+
+        File file = new File(filePath);
+        DetachedTimestampFile detachedTimestampFile = Ots.read(file);
+        timestampDBHelper.addTimestamp(detachedTimestampFile.getTimestamp());
+
+    }
+    private void importing(String filePath) {
+        try{
+            // Zip file
+            ZipFile zipFile = new ZipFile(filePath);
+            importingZip(filePath);
+            Toast.makeText(MainActivity.this,getString(R.string.import_file_success),Toast.LENGTH_LONG).show();
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
+            Toast.makeText(MainActivity.this,getString(R.string.invalid_file_not_found),Toast.LENGTH_LONG).show();
+        } catch (ZipException e){
+
+            // Normal file
+            try {
+                // OTS proof file
+                importingOts(filePath);
+                Toast.makeText(MainActivity.this,getString(R.string.import_file_success),Toast.LENGTH_LONG).show();
+
+            } catch (Exception e1){
+                // Not OTS proof file
+                Toast.makeText(MainActivity.this,getString(R.string.invalid_file_not_ots_not_zip),Toast.LENGTH_LONG).show();
+            }
+
+        } catch (IOException e){
+            e.printStackTrace();
+            Toast.makeText(MainActivity.this, getString(R.string.invalid_file_zip), Toast.LENGTH_LONG).show();
         }
     }
 
