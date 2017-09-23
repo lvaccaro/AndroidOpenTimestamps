@@ -367,10 +367,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
             @Override
             protected Boolean doInBackground(Void... params) {
                 List<File> files = folder.getNestedNotSynchedFiles(storage);
-                if(files.size()>0)
-                    return false;
-                else
-                    return true;
+                return files.size() <= 0;
             }
 
             @Override
@@ -573,7 +570,6 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         while ((ze = zin.getNextEntry()) != null) {
             Log.v("Decompress", "Unzipping " + ze.getName());
             if (ze.isDirectory()) {
-                ;
             } else {
                 ZipEntry zipEntry = zipFile.getEntry(ze.getName());
                 byte[] bytes = new byte[(int) zipEntry.getSize()];

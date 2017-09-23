@@ -124,7 +124,7 @@ public class FileActivity extends AppCompatActivity {
         if (Intent.ACTION_SEND.equals(intent.getAction())) {
             Bundle extras = intent.getExtras();
             if (extras.containsKey(Intent.EXTRA_STREAM)) {
-                Uri uri = (Uri) extras.getParcelable(Intent.EXTRA_STREAM);
+                Uri uri = extras.getParcelable(Intent.EXTRA_STREAM);
                 String scheme = uri.getScheme();
                 if (scheme.equals("content")) {
                     /*String mimeType = intent.getType();

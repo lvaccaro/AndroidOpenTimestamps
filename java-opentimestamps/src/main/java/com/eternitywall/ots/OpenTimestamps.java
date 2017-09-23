@@ -52,7 +52,7 @@ public class OpenTimestamps {
         DetachedTimestampFile detachedTimestampFile = DetachedTimestampFile.deserialize(ctx);
 
         String fileHash = Utils.bytesToHex(detachedTimestampFile.timestamp.msg).toLowerCase();
-        String hashOp = ((OpCrypto) detachedTimestampFile.fileHashOp)._TAG_NAME();
+        String hashOp = detachedTimestampFile.fileHashOp._TAG_NAME();
 
         String firstLine = "File " + hashOp + " hash: " + fileHash + '\n';
         return firstLine + "Timestamp:\n" + detachedTimestampFile.timestamp.strTree(0);

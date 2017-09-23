@@ -102,9 +102,6 @@ public class PendingAttestation extends TimeAttestation {
         if(!Arrays.equals(this._TAG(), ((PendingAttestation)obj)._TAG())){
             return false;
         }
-        if(!Arrays.equals(this.uri, ((PendingAttestation)obj).uri)){
-            return false;
-        }
-        return true;
+        return Arrays.equals(this.uri, ((PendingAttestation) obj).uri);
     }
 }

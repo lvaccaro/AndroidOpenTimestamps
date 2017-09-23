@@ -83,9 +83,6 @@ public class BitcoinBlockHeaderAttestation extends TimeAttestation {
         if(!Arrays.equals(this._TAG(), ((BitcoinBlockHeaderAttestation) obj)._TAG())){
             return false;
         }
-        if(this.height != ((BitcoinBlockHeaderAttestation) obj).height){
-            return false;
-        }
-        return true;
+        return this.height == ((BitcoinBlockHeaderAttestation) obj).height;
     }
 }

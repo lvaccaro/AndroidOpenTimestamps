@@ -38,10 +38,10 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
         public Switch swEnabled;
         public ViewHolder(View v) {
             super(v);
-            tvTitle = (TextView) v.findViewById(R.id.tvTitle);
-            tvSubtitle = (TextView) v.findViewById(R.id.tvSubtitle);
-            swEnabled = (Switch) v.findViewById(R.id.swEnabled);
-            ivStatus = (ImageView) v.findViewById(R.id.ivStatus);
+            tvTitle = v.findViewById(R.id.tvTitle);
+            tvSubtitle = v.findViewById(R.id.tvSubtitle);
+            swEnabled = v.findViewById(R.id.swEnabled);
+            ivStatus = v.findViewById(R.id.ivStatus);
 
             tvTitle.setText("");
             tvSubtitle.setText("");
@@ -158,10 +158,10 @@ public class FolderAdapter extends RecyclerView.Adapter<FolderAdapter.ViewHolder
     }
 
     public interface OnItemClickListener {
-        public void onDetailClick(View view, int position, long id);
-        public void onCheckingClick(View view, int position, long id);
-        public void onEnableClick(View view, int position, long id);
-        public void onDisableClick(View view, int position, long id);
+        void onDetailClick(View view, int position, long id);
+        void onCheckingClick(View view, int position, long id);
+        void onEnableClick(View view, int position, long id);
+        void onDisableClick(View view, int position, long id);
     }
 
     public void setOnItemClickListener(OnItemClickListener itemClickListener) {

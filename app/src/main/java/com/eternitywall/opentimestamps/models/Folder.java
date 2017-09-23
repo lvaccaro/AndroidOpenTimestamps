@@ -24,9 +24,9 @@ public class Folder {
     public byte[] ots;
     public byte[] hash;
 
-    public static enum State  {
+    public enum State  {
         NOTHING, CHECKING, STAMPED, STAMPING, NOTUPDATED, EXPORTING, EXPORTED
-    };
+    }
 
     public List<File> getNestedFiles(Storage storage){
         List<File> files = new ArrayList<>();
@@ -52,11 +52,9 @@ public class Folder {
     public boolean isReady() {
         if (this.enabled == false)
             return false;
-        if (this.state == Folder.State.STAMPING ||
-                this.state == Folder.State.CHECKING ||
-                this.state == Folder.State.EXPORTING)
-            return false;
-        return true;
+        return !(this.state == State.STAMPING ||
+                this.state == State.CHECKING ||
+                this.state == State.EXPORTING);
     }
 
 

@@ -25,8 +25,8 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         public TextView mTvKey,mTvValue;
         public ViewHolder(View v) {
             super(v);
-            mTvKey = (TextView) v.findViewById(R.id.tvKey);
-            mTvValue = (TextView) v.findViewById(R.id.tvValue);
+            mTvKey = v.findViewById(R.id.tvKey);
+            mTvValue = v.findViewById(R.id.tvValue);
             mTvKey.setOnClickListener(this);
             mTvValue.setOnClickListener(this);
         }
@@ -79,7 +79,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
     }
 
     public interface OnItemClickListener {
-        public void onItemClick(View view, int position, String id);
+        void onItemClick(View view, int position, String id);
     }
 
     public void setOnItemClickListener(OnItemClickListener itemClickListener) {

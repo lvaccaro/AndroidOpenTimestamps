@@ -28,7 +28,7 @@ public class UnknownAttestation extends TimeAttestation {
 
     UnknownAttestation(byte[] tag, byte[] payload) {
         super();
-        this._TAG = tag;
+        _TAG = tag;
         this.payload = payload;
     }
 
@@ -61,9 +61,6 @@ public class UnknownAttestation extends TimeAttestation {
         if(!Arrays.equals(this._TAG(), ((UnknownAttestation)obj)._TAG())){
             return false;
         }
-        if(!Arrays.equals(this.payload, ((UnknownAttestation)obj).payload)){
-            return false;
-        }
-        return true;
+        return Arrays.equals(this.payload, ((UnknownAttestation) obj).payload);
     }
 }

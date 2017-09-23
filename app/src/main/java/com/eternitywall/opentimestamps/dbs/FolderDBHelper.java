@@ -58,7 +58,7 @@ public class FolderDBHelper extends DBHelper {
         folder.id = c.getInt(c.getColumnIndex(KEY_ID));
         folder.name = c.getString(c.getColumnIndex(KEY_NAME));
         folder.roodDir = c.getString(c.getColumnIndex(KEY_ROOTDIR));
-        folder.enabled = (c.getInt(c.getColumnIndex(KEY_ENABLED))==1)?true:false;
+        folder.enabled = (c.getInt(c.getColumnIndex(KEY_ENABLED)) == 1);
         //folder.state = Folder.intToState(c.getInt(c.getColumnIndex(KEY_STATE)));
         folder.lastSync = c.getLong(c.getColumnIndex(KEY_LASTSYNC));
         folder.countFiles = c.getLong(c.getColumnIndex(KEY_COUNTFILES));
@@ -84,7 +84,7 @@ public class FolderDBHelper extends DBHelper {
                 folder.id = c.getInt(c.getColumnIndex(KEY_ID));
                 folder.name = c.getString(c.getColumnIndex(KEY_NAME));
                 folder.roodDir = c.getString(c.getColumnIndex(KEY_ROOTDIR));
-                folder.enabled = (c.getInt(c.getColumnIndex(KEY_ENABLED))==1)?true:false;
+                folder.enabled = (c.getInt(c.getColumnIndex(KEY_ENABLED)) == 1);
                 //folder.state = Folder.intToState(c.getInt(c.getColumnIndex(KEY_STATE)));
                 folder.lastSync = c.getLong(c.getColumnIndex(KEY_LASTSYNC));
                 folder.countFiles = c.getLong(c.getColumnIndex(KEY_COUNTFILES));

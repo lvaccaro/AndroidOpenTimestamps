@@ -63,9 +63,6 @@ public class EthereumBlockHeaderAttestation extends TimeAttestation {
         if(!Arrays.equals(this._TAG(), ((EthereumBlockHeaderAttestation) obj)._TAG())){
             return false;
         }
-        if(this.height != ((EthereumBlockHeaderAttestation) obj).height){
-            return false;
-        }
-        return true;
+        return this.height == ((EthereumBlockHeaderAttestation) obj).height;
     }
 }

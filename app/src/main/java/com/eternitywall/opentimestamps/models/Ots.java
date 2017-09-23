@@ -28,7 +28,7 @@ public class Ots {
 
     public static DetachedTimestampFile read(File filepath) throws Exception {
         FileInputStream fin = new FileInputStream(filepath);
-        byte[] bytes = new byte[(int) fin.available()];
+        byte[] bytes = new byte[fin.available()];
         fin.read(bytes, 0, bytes.length);
         fin.close();
         return read(bytes);

@@ -10,5 +10,5 @@ public interface ExtendedDigest
      * 
      * @return byte length of the digests internal buffer.
      */
-    public int getByteLength();
+    int getByteLength();
 }
