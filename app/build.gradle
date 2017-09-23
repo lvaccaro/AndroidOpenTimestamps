@@ -27,6 +27,9 @@ android {
         exclude 'com/google/thirdparty/publicsuffix/PublicSuffixType.gwt.xml'
         exclude 'com/google/thirdparty/publicsuffix/PublicSuffixPatterns.gwt.xml'
     }
+    lintOptions {
+        abortOnError false
+    }
 }
 
 dependencies {
