@@ -12,6 +12,8 @@ import com.eternitywall.ots.op.OpSHA256;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.zip.ZipEntry;
@@ -23,31 +25,32 @@ import java.util.zip.ZipOutputStream;
 
 public class Ots {
 
-    public static Timestamp read(byte[] ots) {
+    public static DetachedTimestampFile read(byte[] ots) {
         StreamDeserializationContext sdc = new StreamDeserializationContext(ots);
         DetachedTimestampFile detached = DetachedTimestampFile.deserialize(sdc);
-        Timestamp stamp = detached.getTimestamp();
-        return stamp;
+        return detached;
+    }
+    public static void write(DetachedTimestampFile detached, String filepath) throws IOException, NoSuchAlgorithmException {
+
+        File file = new File(filepath);
+        FileOutputStream fos = new FileOutputStream(file);
+
+        StreamSerializationContext ssc = new StreamSerializationContext();
+        detached.serialize(ssc);
+
+        fos.write(ssc.getOutput());
+        fos.close();
     }
 
-    public static void write(Timestamp stamp, ZipOutputStream out, String filename) throws IOException, NoSuchAlgorithmException {
+    public static void write(ZipOutputStream out, DetachedTimestampFile detached, String filepath) throws IOException, NoSuchAlgorithmException {
 
-        int MAXSIZE= 1024*1024;
-        byte[] buffer = new byte[MAXSIZE];
         StreamSerializationContext ctx = new StreamSerializationContext();
-        stamp.serialize(ctx);
-
-        ZipEntry entry = new ZipEntry(filename);
+        detached.serialize(ctx);
+        ZipEntry entry = new ZipEntry(filepath);
         try {
             out.putNextEntry(entry);
-            ByteArrayInputStream is = new ByteArrayInputStream(ctx.getOutput());
-            BufferedInputStream origin = new BufferedInputStream(is, MAXSIZE);
-
-            int count;
-            while ((count = origin.read(buffer, 0, MAXSIZE)) != -1) {
-                out.write(buffer, 0, count);
-            }
-            origin.close();
+            out.write(ctx.getOutput());
+            out.closeEntry();
         } catch (Exception e){
             e.printStackTrace();
         }

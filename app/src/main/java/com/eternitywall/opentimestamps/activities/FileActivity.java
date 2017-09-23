@@ -1,11 +1,13 @@
 package com.eternitywall.opentimestamps.activities;
 
 import android.content.ContentResolver;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -18,6 +20,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.eternitywall.opentimestamps.GoogleUrlShortener;
 import com.eternitywall.opentimestamps.IOUtil;
@@ -26,10 +29,12 @@ import com.eternitywall.opentimestamps.adapters.FolderAdapter;
 import com.eternitywall.opentimestamps.adapters.ItemAdapter;
 import com.eternitywall.opentimestamps.dbs.TimestampDBHelper;
 import com.eternitywall.opentimestamps.models.Folder;
+import com.eternitywall.opentimestamps.models.Ots;
 import com.eternitywall.ots.Calendar;
 import com.eternitywall.ots.DetachedTimestampFile;
 import com.eternitywall.ots.Hash;
 import com.eternitywall.ots.OpenTimestamps;
+import com.eternitywall.ots.StreamDeserializationContext;
 import com.eternitywall.ots.StreamSerializationContext;
 import com.eternitywall.ots.Timestamp;
 import com.eternitywall.ots.Utils;
@@ -318,7 +323,7 @@ public class FileActivity extends AppCompatActivity {
                     //Thu May 28 2015 17:41:18 GMT+0200 (CEST)
                     DateFormat sdf = new SimpleDateFormat(getString(R.string.date_format));
                     Date netDate = new Date(date * 1000);
-                    mDataset.put(getString(R.string.attestation), getString(R.string.bitcoin_attests) + sdf.format(netDate));
+                    mDataset.put(getString(R.string.attestation), getString(R.string.bitcoin_attests) + " " + sdf.format(netDate));
                 } catch (Exception ex) {
                     mDataset.put(getString(R.string.attestation), getString(R.string.invalid_date));
                 }
@@ -339,6 +344,44 @@ public class FileActivity extends AppCompatActivity {
     }
 
     public void onDownloadClick() {
+        new AlertDialog.Builder(FileActivity.this)
+                .setTitle(getString(R.string.warning))
+                .setMessage(getString(R.string.file_download_alertdialog))
+                .setPositiveButton(R.string.saving, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        onSavingClick();
+                    }
+                })
+                .setNegativeButton(R.string.sharing, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        onSharingClick();
+                    }
+                })
+                .show();
+    }
+
+    public void onSavingClick() {
+        StreamDeserializationContext ctx = new StreamDeserializationContext(ots);
+        DetachedTimestampFile detachedTimestampFile = DetachedTimestampFile.deserialize(ctx);
+        String filename = Utils.bytesToHex(detachedTimestampFile.fileDigest())+".ots";
+        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        String filepath = dir.getAbsolutePath()+"/"+filename;
+
+        try {
+            Ots.write(detachedTimestampFile,filepath);
+            Toast.makeText(this,getString(R.string.file_proof_saving)+" "+filepath,Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, getString(R.string.file_proof_saving_error),Toast.LENGTH_LONG).show();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            Toast.makeText(this,getString(R.string.file_proof_saving_error),Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public void onSharingClick() {
         Intent shareIntent = new Intent();
         shareIntent.setAction(Intent.ACTION_SEND);
         shareIntent.putExtra(Intent.EXTRA_STREAM, ots);

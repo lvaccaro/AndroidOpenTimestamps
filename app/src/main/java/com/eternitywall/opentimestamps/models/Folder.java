@@ -46,7 +46,7 @@ public class Folder {
     }
 
     public String zipPath(Context context){
-        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         return  dir.getAbsolutePath()+"/"+this.name.replace(" ","_")+".zip";
     }
     public boolean isReady() {

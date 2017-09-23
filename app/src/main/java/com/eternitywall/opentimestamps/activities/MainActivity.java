@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Region;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -68,6 +69,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
@@ -567,20 +569,23 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
         try {
             FileInputStream fin = new FileInputStream(filePath);
             ZipInputStream zin = new ZipInputStream(fin);
+            ZipFile zipFile = new ZipFile(filePath);
             ZipEntry ze = null;
             while ((ze = zin.getNextEntry()) != null) {
                 Log.v("Decompress", "Unzipping " + ze.getName());
                 if (ze.isDirectory()) {
                     ;
                 } else {
-                    byte[] bytes = new byte[(int) ze.getSize()];
+                    ZipEntry zipEntry = zipFile.getEntry(ze.getName());
+                    byte[] bytes = new byte[(int) zipEntry.getSize()];
                     zin.read(bytes, 0, bytes.length);
-                    Timestamp stamp = Ots.read(bytes);
-                    timestampDBHelper.addTimestamp(stamp);
+                    DetachedTimestampFile detachedTimestampFile = Ots.read(bytes);
+                    timestampDBHelper.addTimestamp(detachedTimestampFile.getTimestamp());
                     zin.closeEntry();
                 }
             }
-        } catch (IOException e) {
+            zin.close();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -627,7 +632,8 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                         Hash sha256 = new Hash(IOUtil.readFileSHA256(file));
                         Timestamp stamp = timestampDBHelper.getTimestamp(sha256.getValue());
                         String filename = IOUtil.bytesToHex(sha256.getValue()) + ".ots";
-                        Ots.write(stamp,out,filename);
+                        DetachedTimestampFile detached = new DetachedTimestampFile(new OpSHA256(),stamp);
+                        Ots.write(out, detached,filename);
 
                         countFiles++;
                         publishProgress(countFiles);
