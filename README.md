@@ -1,5 +1,5 @@
-# Android OpenTimestamps app
-Android app for creating and verifying OpenTimestamps proofs. 
+# Android OpenTimestamps app [![Build Status](https://travis-ci.org/lvaccaro/AndroidOpenTimestamps.svg?branch=master)](https://travis-ci.org/lvaccaro/AndroidOpenTimestamps)
+Android app for creating and verifying OpenTimestamps proofs.
 
 Based on OpenTimestamps Java Library: https://github.com/opentimestamps/java-opentimestamps .
 
