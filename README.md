@@ -1,5 +1,5 @@
-# Android OpenTimestamps app
-Android app for creating and verifying OpenTimestamps proofs. 
+# Android OpenTimestamps app [![Build Status](https://travis-ci.org/lvaccaro/AndroidOpenTimestamps.svg?branch=master)](https://travis-ci.org/lvaccaro/AndroidOpenTimestamps)
+Android app for creating and verifying OpenTimestamps proofs.
 
 Based on OpenTimestamps Java Library: https://github.com/opentimestamps/java-opentimestamps .
 
@@ -10,7 +10,7 @@ Features:
 * Timestamp all your files in a simple click
 * Storage ots proofs in a Merkle tree database
 * Exporting/Importing all zipped proofs or single ots proof
-* Share a single file to timestamp & verifyng
+* Share a single file to timestamp & verifying
 * Download & Share the ots proof
 
 ![App Screenshot](https://raw.githubusercontent.com/lvaccaro/AndroidOpenTimestamps/master/Screenshot.png)
