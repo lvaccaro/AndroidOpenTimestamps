@@ -64,8 +64,7 @@ public class Ots {
         }
     }
 
-    public static DetachedTimestampFile hashing(File file) throws IOException, NoSuchAlgorithmException {
-        Hash sha256 = new Hash(IOUtil.readFileSHA256(file));
-        return DetachedTimestampFile.from(new OpSHA256(), sha256);
+    public static DetachedTimestampFile hashing(File file) throws Exception {
+        return DetachedTimestampFile.from(new OpSHA256(), IOUtil.readFileSHA256(file));
     }
 }

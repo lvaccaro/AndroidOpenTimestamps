@@ -422,9 +422,7 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
 
                     try {
                         fileTimestamps.add(Ots.hashing(file));
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (NoSuchAlgorithmException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -475,10 +473,12 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                     folder.hash = merkleTip.getDigest();
                     Log.d("STAMP", "MERKLE: " + IOUtil.bytesToHex(folder.hash));
                     //private static Timestamp create(Timestamp timestamp, List<String> calendarUrls, Integer m, HashMap<String,String> privateCalendarUrls) {
-                    folder.ots = OpenTimestamps.stamp(merkleTip, null, 0, null);
+                    DetachedTimestampFile detached = new DetachedTimestampFile(new OpSHA256(),merkleTip);
+                    OpenTimestamps.stamp(detached);
+                    folder.ots=detached.serialize();
                     Log.d("STAMP", "OTS: " + IOUtil.bytesToHex(folder.ots));
                     // Stamp proof info
-                    String info = OpenTimestamps.info(folder.ots);
+                    String info = OpenTimestamps.info(detached);
                     Log.d("STAMP", "INFO: " + info);
                 }catch(Exception e){
                     e.printStackTrace();
@@ -661,9 +661,9 @@ public class MainActivity extends AppCompatActivity implements FolderAdapter.OnI
                     for (File file : files) {
 
                         Log.d("STAMP", "FILE: " + file.getName());
-                        Hash sha256 = new Hash(IOUtil.readFileSHA256(file));
-                        Timestamp stamp = timestampDBHelper.getTimestamp(sha256.getValue());
-                        String filename = IOUtil.bytesToHex(sha256.getValue()) + ".ots";
+                        DetachedTimestampFile sha256 = DetachedTimestampFile.from(new OpSHA256(), IOUtil.readFileSHA256(file));
+                        Timestamp stamp = timestampDBHelper.getTimestamp(sha256.fileDigest());
+                        String filename = IOUtil.bytesToHex(sha256.fileDigest()) + ".ots";
                         DetachedTimestampFile detached = new DetachedTimestampFile(new OpSHA256(),stamp);
                         Ots.write(out, detached,filename);
 
