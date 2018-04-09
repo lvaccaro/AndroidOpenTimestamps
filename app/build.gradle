@@ -27,7 +27,7 @@ android {
         exclude 'com/google/thirdparty/publicsuffix/PublicSuffixType.gwt.xml'
         exclude 'com/google/thirdparty/publicsuffix/PublicSuffixPatterns.gwt.xml'
         exclude 'com/google/thirdparty/publicsuffix/PublicSuffixPatterns.gwt.xml'
-        exclude 'org/apache/commons/cli/AlreadySelectedException.class'
+
     }
     lintOptions {
         abortOnError false
@@ -48,6 +48,11 @@ dependencies {
     compile 'com.android.support:multidex:1.0.1'
     testCompile 'junit:junit:4.12'
     compile('com.eternitywall:java-opentimestamps:1.15') {
-        exclude group: 'com.bitcoinj'
+        exclude group: 'org.bitcoinj'
+        exclude group: 'com.google.protobuf'
+        exclude group: 'org.slf4j'
+        exclude group: 'net.jcip'
+        exclude group: 'commons-cli'
+
     }
 }
