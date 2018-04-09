@@ -70,7 +70,7 @@ public class FileActivity extends AppCompatActivity {
     TimestampDBHelper timestampDBHelper;
     ContentResolver mContentResolver;
     Timestamp timestamp;
-    byte[] ots;
+    DetachedTimestampFile ots;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,7 +146,7 @@ public class FileActivity extends AppCompatActivity {
     private void load (final Uri uri) {
 
         new AsyncTask<Void, Void, Boolean>() {
-            Hash sha256;
+            DetachedTimestampFile sha256;
             Long date;
 
             @Override
@@ -164,25 +164,25 @@ public class FileActivity extends AppCompatActivity {
                     }
 
                     // Calculate Hash
-                    sha256 = new Hash( IOUtil.SHA256(outputStream.toByteArray()) );
-                    Log.d("FILE", "HASH: "+IOUtil.bytesToHex(sha256.getValue()));
+                    sha256 = DetachedTimestampFile.from(new OpSHA256(), outputStream.toByteArray() );
+                    Log.d("FILE", "HASH: "+IOUtil.bytesToHex(sha256.fileDigest()));
 
                     // check hash into DB
-                    timestamp = timestampDBHelper.getTimestamp(sha256.getValue());
+                    timestamp = timestampDBHelper.getTimestamp(sha256.fileDigest());
                     if(timestamp == null){
                         Log.d("FILE", "File not found");
                         return true;
                     }
                     Log.d("FILE", Timestamp.strTreeExtended(timestamp,0));
-                    ots = getOts(timestamp);
+                    ots = new DetachedTimestampFile(new OpSHA256(),timestamp);
 
                     // verify OTS
-                    date = OpenTimestamps.verify(ots,sha256);
+                    date = OpenTimestamps.verify(ots, sha256);
 
                     // upgrade
                     if (date == null || date == 0){
-                        ots = OpenTimestamps.upgrade(ots);
-                        date = OpenTimestamps.verify(ots,sha256);
+                        OpenTimestamps.upgrade(ots);
+                        date = OpenTimestamps.verify(ots, sha256);
                     }
 
                 } catch (FileNotFoundException e) {
@@ -232,7 +232,7 @@ public class FileActivity extends AppCompatActivity {
     private void stamp (final Uri uri) {
 
         new AsyncTask<Void, Void, Boolean>() {
-            Hash sha256;
+            DetachedTimestampFile sha256;
 
             @Override
             protected Boolean doInBackground(Void... params) {
@@ -255,9 +255,9 @@ public class FileActivity extends AppCompatActivity {
                 // Calculate Hash
                 final List<DetachedTimestampFile> fileTimestamps = new ArrayList<>();
                 try {
-                    sha256 = new Hash(IOUtil.SHA256(outputStream.toByteArray()));
-                    Log.d("FILE", "HASH: " + IOUtil.bytesToHex(sha256.getValue()));
-                    fileTimestamps.add(DetachedTimestampFile.from(new OpSHA256(), sha256));
+                    sha256 = DetachedTimestampFile.from(new OpSHA256(), outputStream.toByteArray());
+                    Log.d("FILE", "HASH: " + IOUtil.bytesToHex(sha256.fileDigest()));
+                    fileTimestamps.add(sha256);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -268,10 +268,11 @@ public class FileActivity extends AppCompatActivity {
                     byte[] hash = merkleTip.getDigest();
                     Log.d("STAMP", "MERKLE: " + IOUtil.bytesToHex(hash));
                     //private static Timestamp create(Timestamp timestamp, List<String> calendarUrls, Integer m, HashMap<String,String> privateCalendarUrls) {
-                    byte[] ots = OpenTimestamps.stamp(merkleTip, null, 0, null);
-                    Log.d("STAMP", "OTS: " + IOUtil.bytesToHex(ots));
+                    DetachedTimestampFile detached = new DetachedTimestampFile(new OpSHA256(),merkleTip);
+                    OpenTimestamps.stamp(detached);
+                    Log.d("STAMP", "OTS: " + IOUtil.bytesToHex(detached.serialize()));
                     // Stamp proof info
-                    String info = OpenTimestamps.info(ots);
+                    String info = OpenTimestamps.info(detached);
                     Log.d("STAMP", "INFO: " + info);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -306,15 +307,15 @@ public class FileActivity extends AppCompatActivity {
         }.execute();
     }
 
-    public void refresh(Uri uri, Hash hash, Timestamp timestamp, Long date){
+    public void refresh(Uri uri, DetachedTimestampFile hash, Timestamp timestamp, Long date){
         mDataset.put(getString(R.string.name),uri.getLastPathSegment());
         mDataset.put(getString(R.string.uri),uri.toString());
         mDataset.put(getString(R.string.type),getMimeType(uri.toString()));
-        mDataset.put(getString(R.string.hash), IOUtil.bytesToHex(hash.getValue()));
+        mDataset.put(getString(R.string.hash), IOUtil.bytesToHex(hash.fileDigest()));
         if(timestamp == null){
             mDataset.put(getString(R.string.ots_proof), getString(R.string.file_not_timestamped));
         } else {
-            mDataset.put(getString(R.string.ots_proof), IOUtil.bytesToHex(ots));
+            mDataset.put(getString(R.string.ots_proof), IOUtil.bytesToHex(ots.serialize()));
 
             if (date == null || date == 0) {
                 mDataset.put(getString(R.string.attestation), getString(R.string.pending_or_bad_attestation));
@@ -332,16 +333,6 @@ public class FileActivity extends AppCompatActivity {
         mAdapter.notifyDataSetChanged();
     }
 
-
-    public byte[] getOts(Timestamp timestamp){
-        if(timestamp == null){
-            return null;
-        }
-        DetachedTimestampFile detachedTimestampFile = new DetachedTimestampFile(new OpSHA256(),timestamp);
-        StreamSerializationContext ctx = new StreamSerializationContext();
-        detachedTimestampFile.serialize(ctx);
-        return ctx.getOutput();
-    }
 
     public void onDownloadClick() {
         new AlertDialog.Builder(FileActivity.this)
@@ -363,14 +354,12 @@ public class FileActivity extends AppCompatActivity {
     }
 
     public void onSavingClick() {
-        StreamDeserializationContext ctx = new StreamDeserializationContext(ots);
-        DetachedTimestampFile detachedTimestampFile = DetachedTimestampFile.deserialize(ctx);
-        String filename = Utils.bytesToHex(detachedTimestampFile.fileDigest())+".ots";
+
+        String filename = Utils.bytesToHex(ots.fileDigest())+".ots";
         File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         String filepath = dir.getAbsolutePath()+"/"+filename;
-
         try {
-            Ots.write(detachedTimestampFile,filepath);
+            Ots.write(ots,filepath);
             Toast.makeText(this,getString(R.string.file_proof_saving)+" "+filepath,Toast.LENGTH_LONG).show();
         } catch (IOException e) {
             e.printStackTrace();
@@ -384,7 +373,7 @@ public class FileActivity extends AppCompatActivity {
     public void onSharingClick() {
         Intent shareIntent = new Intent();
         shareIntent.setAction(Intent.ACTION_SEND);
-        shareIntent.putExtra(Intent.EXTRA_STREAM, ots);
+        shareIntent.putExtra(Intent.EXTRA_STREAM, ots.serialize());
         shareIntent.setType("text/plain");
         startActivity(Intent.createChooser(shareIntent, getString(R.string.share_proof_to)));
     }
@@ -395,7 +384,7 @@ public class FileActivity extends AppCompatActivity {
 
             @Override
             protected Boolean doInBackground(Void... params) {
-                String otsString = IOUtil.bytesToHex(ots);
+                String otsString = IOUtil.bytesToHex(ots.serialize());
                 String url = "https://opentimestamps.org/info.html?ots=";
                 url += otsString;
                 shortUrl = GoogleUrlShortener.shorten(url);

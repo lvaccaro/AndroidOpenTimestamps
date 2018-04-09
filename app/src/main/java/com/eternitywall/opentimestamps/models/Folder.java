@@ -3,6 +3,7 @@ package com.eternitywall.opentimestamps.models;
 import android.content.Context;
 import android.os.Environment;
 
+import com.eternitywall.ots.DetachedTimestampFile;
 import com.sromku.simple.storage.Storage;
 
 import java.io.File;
