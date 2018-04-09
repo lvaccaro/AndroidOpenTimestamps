@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 26
-    buildToolsVersion "26"
+    buildToolsVersion "26.0.2"
     defaultConfig {
         applicationId "com.eternitywall.opentimestamps"
         minSdkVersion 16
@@ -39,7 +39,6 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-
     compile 'com.android.support:appcompat-v7:26.0.+'
     compile 'com.android.support:cardview-v7:26.0.+'
     compile 'com.android.support:recyclerview-v7:26.0.+'
@@ -48,8 +47,7 @@ dependencies {
     compile 'com.sromku:simple-storage:1.2.0'
     compile 'com.android.support:multidex:1.0.1'
     testCompile 'junit:junit:4.12'
-
-    compile('com.eternitywall:java-opentimestamps:1.14') {
+    compile('com.eternitywall:java-opentimestamps:1.15') {
         exclude group: 'com.bitcoinj'
     }
 }
